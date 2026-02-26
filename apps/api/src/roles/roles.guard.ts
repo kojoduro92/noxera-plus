@@ -1,8 +1,8 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { ForbiddenException, Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import * as admin from 'firebase-admin';
+import type { RequestWithAuth } from '../auth/auth.types';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -18,11 +18,23 @@ export class RolesGuard implements CanActivate {
       return true; // No specific permissions required, allow access
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithAuth>();
+    const contextPermissions = request.authContext?.permissions ?? [];
+    if (contextPermissions.includes('*')) {
+      return true;
+    }
+    if (contextPermissions.length > 0) {
+      const granted = requiredPermissions.every((perm) => contextPermissions.includes(perm));
+      if (!granted) {
+        throw new ForbiddenException('Insufficient permissions for this action.');
+      }
+      return true;
+    }
+
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      return false; // No token provided
+      throw new ForbiddenException('Missing authorization token.');
     }
 
     try {
@@ -35,14 +47,20 @@ export class RolesGuard implements CanActivate {
       });
 
       if (!user || !user.role) {
-        return false; // User not found in DB or no role assigned
+        throw new ForbiddenException('Role assignment missing for this account.');
       }
 
       const userPermissions = user.role.permissions || [];
-      return requiredPermissions.every((perm) => userPermissions.includes(perm));
+      const granted = requiredPermissions.every((perm) => userPermissions.includes(perm));
+      if (!granted) {
+        throw new ForbiddenException('Insufficient permissions for this action.');
+      }
+      return true;
     } catch (error) {
-      console.error('Firebase token verification failed or DB lookup error:', error);
-      return false;
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new ForbiddenException('Permission check failed.');
     }
   }
 }

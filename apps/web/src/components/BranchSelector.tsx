@@ -17,9 +17,9 @@ interface BranchSelectorProps {
 export function BranchSelector({ selectedBranchId, onSelectBranch }: BranchSelectorProps) {
   const [branches, setBranches] = useState(mockBranches);
   
-  // In a real application, you would fetch branches from your API:
+  // In a real application, fetch branches from the server-authenticated admin proxy.
   // useEffect(() => {
-  //   fetch("/api/branches", { headers: { "x-tenant-id": "current-tenant-id" } })
+  //   fetch("/api/admin/branches")
   //     .then((res) => res.json())
   //     .then((data) => setBranches(data));
   // }, []);

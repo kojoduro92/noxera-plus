@@ -5,7 +5,33 @@ import { PrismaService } from '../prisma/prisma.service';
 export class GivingService {
   constructor(private prisma: PrismaService) {}
 
-  async createGivingRecord(tenantId: string, data: { amount: number; fund: string; method: string; donorName?: string; memberId?: string; transactionDate?: string; paymentGateway?: string; transactionId?: string; status?: string; branchId?: string }) {
+  private async assertBranchInTenant(tenantId: string, branchId?: string) {
+    if (!branchId) return;
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, tenantId },
+      select: { id: true },
+    });
+    if (!branch) throw new NotFoundException('Branch not found for this tenant');
+  }
+
+  private assertAllowedBranchAccess(allowedBranchIds: string[] | undefined, branchId?: string) {
+    if (!allowedBranchIds || !branchId) return;
+    if (!allowedBranchIds.includes(branchId)) {
+      throw new NotFoundException('Branch not found for this account scope');
+    }
+  }
+
+  async createGivingRecord(tenantId: string, data: { amount: number; fund: string; method: string; donorName?: string; memberId?: string; transactionDate?: string; paymentGateway?: string; transactionId?: string; status?: string; branchId?: string }, allowedBranchIds?: string[]) {
+    this.assertAllowedBranchAccess(allowedBranchIds, data.branchId);
+    await this.assertBranchInTenant(tenantId, data.branchId);
+    if (data.memberId) {
+      const member = await this.prisma.member.findFirst({
+        where: { id: data.memberId, tenantId },
+        select: { id: true },
+      });
+      if (!member) throw new NotFoundException('Member not found for this tenant');
+    }
+
     return this.prisma.givingTransaction.create({
       data: {
         tenantId,
@@ -23,10 +49,14 @@ export class GivingService {
     });
   }
 
-  async getGivingRecords(tenantId: string, branchId?: string) {
+  async getGivingRecords(tenantId: string, branchId?: string, allowedBranchIds?: string[]) {
+    this.assertAllowedBranchAccess(allowedBranchIds, branchId);
+    await this.assertBranchInTenant(tenantId, branchId);
     const where: any = { tenantId };
     if (branchId) {
       where.branchId = branchId;
+    } else if (allowedBranchIds && allowedBranchIds.length > 0) {
+      where.branchId = { in: allowedBranchIds };
     }
     return this.prisma.givingTransaction.findMany({
       where,
@@ -39,8 +69,10 @@ export class GivingService {
     });
   }
 
-  async getGivingSummary(tenantId: string, branchId?: string) {
-    const records = await this.getGivingRecords(tenantId, branchId);
+  async getGivingSummary(tenantId: string, branchId?: string, allowedBranchIds?: string[]) {
+    await this.assertBranchInTenant(tenantId, branchId);
+    this.assertAllowedBranchAccess(allowedBranchIds, branchId);
+    const records = await this.getGivingRecords(tenantId, branchId, allowedBranchIds);
     
     // Calculate simple MTD values logic
     const currentMonth = new Date().getMonth();

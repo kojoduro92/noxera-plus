@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 const SESSION_COOKIE_NAME = "noxera_super_admin_token";
+const ADMIN_COOKIE_NAME = "noxera_admin_token";
+const IMPERSONATION_COOKIE_NAME = "noxera_admin_impersonation";
 const SESSION_TTL_SECONDS = 60 * 60;
 
 function parseUpstreamError(text: string, fallback: string) {
@@ -61,6 +63,8 @@ export async function POST(request: NextRequest) {
     maxAge: SESSION_TTL_SECONDS,
     path: "/",
   });
+  cookieStore.delete(ADMIN_COOKIE_NAME);
+  cookieStore.delete(IMPERSONATION_COOKIE_NAME);
 
   return NextResponse.json({ ok: true });
 }
@@ -107,5 +111,7 @@ export async function GET() {
 export async function DELETE() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.delete(ADMIN_COOKIE_NAME);
+  cookieStore.delete(IMPERSONATION_COOKIE_NAME);
   return NextResponse.json({ ok: true });
 }

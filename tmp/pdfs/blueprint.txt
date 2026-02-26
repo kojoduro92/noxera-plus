@@ -1,0 +1,1407 @@
+Church Management SaaS + Website
+Builder + Mobile App
+Project Requirements & Technical Blueprint
+Prepared for: Super Admin (Platform Owner)
+Version: v1.0 | Date: February 07, 2026
+
+Table of Contents
+Right-click to update field.
+
+2
+
+1. Executive Summary
+This document defines a complete, multi-tenant church management SaaS that includes:
+
+
+
+
+
+A Church Admin web portal (operations, members, finance, communications, reporting)
+A Super Admin portal (platform oversight, subscriptions, support, compliance)
+A public church website builder (per church, with custom domains)
+A Flutter mobile app ecosystem connected to the same backend (staff + optional member app)
+
+The system is designed for modern UX, strong tenant isolation, structured workflows, and scalable
+subscriptions. It uses TypeScript, React/Next.js, Tailwind, Prisma, SQL, Docker, Flutter, and Firebase
+(Auth/FCM/Analytics).
+
+1.1 Goals
+
+
+
+
+
+Enable churches to run day-to-day operations in a structured way (members, services, groups, events,
+giving, reports).
+Provide a website builder and publishing pipeline so each church can launch a modern website quickly.
+Offer a Flutter mobile experience that complements web usage (attendance, follow-ups, notifications,
+dashboards).
+Give the platform owner (Super Admin) full oversight: tenant governance, billing, usage analytics,
+security, and support.
+
+1.2 Non-Goals (for Phase 1)
+
+
+
+
+Full double-entry accounting and payroll (we start with finance-lite; deep accounting can be Phase 3).
+Streaming infrastructure (we integrate embeds from existing platforms first; native streaming can be
+later).
+Highly custom bespoke website development per church (we focus on templates + modular blocks).
+
+1.3 Success Metrics (KPIs)
+
+
+
+
+
+
+Activation: % of new churches completing onboarding and recording first service within 7 days.
+Weekly Active Churches (WAC) and Staff Active Users (DAU/WAU).
+Retention: 30/60/90-day retention by plan tier.
+Revenue: MRR, churn, upgrade/downgrade rate, average revenue per church (ARPC).
+Operational value: average time to capture visitors and generate weekly report.
+
+2. Users, Roles, and Portals
+2.1 Portals
+Super Admin Portal: Platform owner console to manage all churches, plans, billing, feature flags, audits, and
+support.
+Church Admin Portal: Tenant portal for church staff to manage operations and content.
+
+3
+
+Public Church Website: Public-facing site generated per tenant (subdomain + custom domain).
+Flutter Mobile Apps: Staff app (leaders/treasurers/check-in). Optional member app (profile, giving, events).
+
+2.2 Default roles within a church (RBAC)
+Role
+
+Typical Permissions
+
+Church Owner
+
+Full access, billing ownership, security settings.
+
+Admin
+
+Operational administration, members, events,
+services, website content.
+
+Pastor/Leader
+
+Member care, follow-ups, attendance, reports
+(limited settings).
+
+Treasurer
+
+Giving, pledges, budgets, finance reports.
+
+Secretary
+
+Announcements, events, registries, schedules.
+
+Group Leader
+
+Only their assigned groups and group attendance.
+
+Custom roles can be created per church by enabling permissions at module/action level (view, create, edit,
+delete, export, approve).
+
+2.3 Permissions model (recommended)
+Use a consistent permission key pattern:
+
+
+
+
+
+
+
+module.action.scope
+members.view.any, members.edit.any, members.export.any
+attendance.checkin, attendance.reports.view
+giving.create, giving.approve, giving.export
+website.pages.edit, website.publish, website.domains.manage
+admin.impersonate (Super Admin only)
+
+3. End-to-End Product Flow
+3.1 Church signup & onboarding (tenant creation)
+1.
+2.
+3.
+4.
+5.
+
+Landing page → Start free trial
+Account creation (email/password + optional phone OTP; or phone OTP first)
+Create church workspace (name, location, currency, timezone, denomination optional)
+Pick plan (Trial → Paid). Apply coupon codes (optional).
+Setup wizard: branches/campuses, service schedules, departments/groups, giving funds, roles, staff
+invites
+6. Import members (CSV/Excel) and tag segmentation
+7. Enable website: choose template, branding, publish to subdomain, connect custom domain
+8. Go-live: start first service check-in and weekly report
+4
+
+3.2 Tenant lifecycle states
+State
+
+Meaning
+
+Trial
+
+Full or near-full access with quotas; expires
+automatically.
+
+Active
+
+Paid and in good standing.
+
+Past Due
+
+Payment failed; limited grace period.
+
+Suspended
+
+Read-only access; admin can export data.
+
+Cancelled
+
+No access; data retained for a retention period.
+
+Deleted
+
+Hard delete after retention (by policy).
+
+3.3 Weekly operations loop (typical)
+
+
+
+
+
+
+
+Prepare services and events → notify leaders and volunteers
+Capture attendance and visitor cards during service (web or Flutter)
+Create follow-ups for visitors and members needing care
+Record giving (manual and online reconciliation)
+Publish announcements and sermons to website
+Review dashboards and export weekly reports
+
+3.4 Super Admin oversight loop
+
+
+
+
+
+
+Monitor signups, activation, and payment status
+Review audit logs and security signals (failed logins, unusual access)
+Manage subscriptions, upgrades/downgrades, trials, and suspensions
+Handle support tickets; secure admin impersonation with full logging
+Track platform KPIs (MRR, churn, active churches, module adoption)
+
+3.5 Support & escalation flow
+9. In-app help → knowledge base articles + short tutorials.
+10. Support ticket creation from within tenant portal (auto attaches tenant context).
+11. Super Admin triage → assign to engineering or billing ops.
+12. Secure impersonation (time-limited) to reproduce issues; every action logged.
+13. Resolution → ticket closure + optional satisfaction prompt.
+
+4. Functional Modules
+4.1 Platform Core (shared services)
+Authentication & Identity
+
+
+Firebase Authentication for email/password, phone OTP, Google Sign-In
+5
+
+
+
+
+Backend verifies Firebase ID tokens and maps to platform user records
+Device/session tracking and optional 2FA (Phase 2)
+
+Multi-Tenancy
+
+
+
+
+Tenant (church) isolation using tenant_id on every row
+Branch/campus support inside a tenant
+Subdomain routing for each church; optional custom domain
+
+RBAC & Permissions
+
+
+
+
+Role-based access control per church
+Permission toggles at module/action level
+Audit log entry for every sensitive operation
+
+Subscription & Billing
+
+
+
+
+Plans, feature gates, seat limits, add-ons (SMS credits, extra storage, extra branches)
+Dunning workflow for failed payments; auto downgrade/suspend policy
+Invoices and receipts; tax/VAT settings per region
+
+Notifications
+
+
+
+
+Email + SMS sending with templates and segmentation
+In-app notifications and activity feed
+FCM push notifications for Flutter apps
+
+Files & Media
+
+
+
+
+Secure uploads (member photos, documents, receipts)
+Sermon media library (audio/video links or files)
+Storage quotas by plan
+
+Observability
+
+
+
+Error tracking, request logging, performance metrics
+Admin dashboards for uptime and queue health
+
+4.2 Church Management (tenant modules)
+Membership CRM
+
+
+
+
+
+Member profiles (contacts, family links, tags, notes, attachments)
+Visitor capture and follow-up pipeline
+Milestones (baptism, marriage, dedication) as structured records
+Member status lifecycle (active, inactive, transferred, deceased)
+
+Groups, Departments & Ministries
+
+
+
+
+Departments/ministries with leaders and rosters
+Small groups/cell groups with meetings and attendance
+Service teams (ushers, media, choir) and schedules (Phase 2)
+
+Services & Attendance
+6
+
+
+
+
+
+Service templates (Sunday service, midweek, all-night, etc.)
+Check-in (search + QR), visitor cards, attendance analytics
+Kids check-in module (Phase 2)
+
+Events & Programs
+
+
+
+
+Events calendar, registrations, reminders
+Ticketing (optional) and attendance tracking
+Volunteer assignments (Phase 2)
+
+Giving, Pledges & Projects
+
+
+
+
+Giving categories: tithe, offering, pledge, project fund
+Online giving page (web) and mobile-friendly flow
+Pledge commitments + progress; donor statements
+
+Finance Lite
+
+
+
+
+Income/expense tracking, budgets per department
+Approval workflow (Phase 2)
+Export to CSV and integrations later
+
+Communication Center
+
+
+
+
+Bulk SMS/email to segments (by tag, group, attendance, visitors)
+Announcement scheduling
+Automated follow-up sequences (Phase 2)
+
+Sermons & Media
+
+
+
+
+Series, sermons, speakers, notes, attachments
+Publish to website automatically
+Podcast feed (Phase 3)
+
+Reports & Dashboards
+
+
+
+
+Weekly service reports, attendance trends, giving trends
+Visitor retention, member engagement by group
+Custom report builder (Phase 3)
+
+4.3 Website Builder (per church)
+
+
+
+
+
+
+
+
+
+Template gallery (modern layouts built with Tailwind)
+Branding: logo, colors, fonts, header/footer builder
+Pages: About, Ministries, Contact, Service Times, New Here, Give
+Dynamic blocks: sermons, events, announcements, staff/team, gallery
+SEO: meta tags, social preview, sitemap, robots settings
+Publishing: churchname.platform.com subdomain + custom domain
+Forms: prayer requests, contact forms, volunteer signups
+Analytics: basic traffic + conversions (Phase 2)
+
+7
+
+4.3.1 Website page types
+
+
+
+
+
+Static pages (About, Contact, Service Times, Ministries, Staff, Privacy)
+Dynamic listing pages (Events, Sermons, Announcements)
+Conversion pages (Give, New Here, Volunteer, Prayer Request)
+Landing pages for campaigns (e.g., conference registration)
+
+4.4 Flutter Apps (connected to the same backend)
+Staff App (Phase 1)
+
+
+
+
+Attendance check-in, visitor capture, follow-ups
+Quick dashboards (attendance, giving summary)
+Push notifications for assignments and reminders
+
+Member App (Phase 2)
+
+
+
+
+Member profile, giving history, event registrations
+Sermon library, announcements, prayer requests
+Volunteer schedules (Phase 2/3)
+
+Check-in/Kiosk Mode (optional)
+
+
+
+Tablet mode for fast check-in at entrances
+Offline queue with later sync (Phase 3)
+
+4.5 Super Admin Portal
+
+
+
+
+
+
+
+Tenant directory: search churches, status, plan, usage, last activity
+Subscription ops: upgrade/downgrade, failed payments, manual credits
+Feature flags per tenant (enable beta modules safely)
+Support tickets and secure impersonation (with mandatory logging)
+Security & compliance dashboard: audit logs, suspicious access, exports
+Platform analytics: activation funnel, MRR, churn, retention, storage usage
+
+4.6 Navigation map (Information Architecture)
+4.6.1 Church Admin Portal navigation
+
+
+
+
+
+
+
+
+
+
+
+Dashboard
+Members (Members, Visitors, Follow-ups, Tags)
+Services (Service Schedules, Check-in, Weekly Report)
+Groups & Ministries
+Events
+Giving & Finance (Giving, Pledges, Funds, Budgets, Statements)
+Communication (SMS/Email, Templates, Campaigns)
+Website (Templates, Pages, Media, Domains)
+Reports (Attendance, Giving, Engagement)
+Settings (Branch, Roles, Integrations, Billing)
+8
+
+4.6.2 Super Admin Portal navigation
+
+
+
+
+
+
+
+
+
+Overview Dashboard
+Churches (Directory, Status, Usage, Plans)
+Billing (Subscriptions, Invoices, Payments, Coupons)
+Support (Tickets, Impersonation Logs)
+Security (Audit Logs, Alerts, Admin Users)
+Feature Flags (Rollouts, Betas)
+Content (Global templates, announcements)
+System (Providers, Webhooks, Health, Backups)
+
+5. Subscription Plans & Feature Gating
+Plans should encourage adoption while protecting platform costs (SMS, storage, seats). Core principle: every
+feature exists in the system, but access is controlled by plan and add-ons.
+
+5.1 Recommended plans (example)
+Plan
+
+Best For
+
+Limits (example)
+
+Included Modules
+
+Notes
+
+Trial (14-30 days)
+
+New churches
+evaluating
+
+1 branch, 3 staff
+seats, 500
+members, limited
+SMS
+
+Most core modules
++ basic website
+template
+
+Auto-convert or
+restrict after trial
+
+Basic
+
+Small churches
+
+1 branch, 5 seats,
+2,000 members, 5
+GB storage
+
+Members, services,
+attendance,
+events, giving
+manual, basic
+reports
+
+Website on
+subdomain only
+
+Pro
+
+Growing churches
+
+3 branches, 15
+seats, 10,000
+members, 25 GB
+storage
+
+Everything in Basic
++ website builder
+full + online giving
++ segments +
+advanced reports
+
+Custom domain +
+automations
+
+Enterprise
+
+Large/multicampus
+
+Unlimited
+branches, custom
+seats, custom
+storage
+
+Everything +
+advanced security,
+SLA, custom
+integrations
+
+Dedicated support
++ SSO option
+
+Add-ons: extra seats, extra branches, extra SMS credits, extra storage, premium templates, dedicated
+onboarding.
+
+5.2 Billing flows
+
+
+Trial start → reminder emails (day 7, day 14, day 25) → convert to paid.
+9
+
+
+
+
+
+
+Upgrade: immediate access to new features; proration policy determined by provider.
+Downgrade: schedule for end of billing cycle; keep data but restrict features.
+Cancellation: tenant enters Cancelled state; access removed; data retained for retention period.
+Failed payment: grace period → Past Due → Suspended with read-only export.
+
+5.3 Feature matrix (high-level)
+A detailed feature matrix is included below. (Use landscape orientation for readability.)
+
+10
+
+Feature Matrix (Example)
+Feature Area
+
+Capability
+
+Trial
+
+Basic
+
+Pro
+
+Enterprise
+
+Core
+
+Tenant signup &
+onboarding
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Core
+
+RBAC (roles &
+permissions)
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Members
+
+Member profiles &
+families
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Members
+
+Visitors & follow-up
+pipeline
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Services
+
+Service schedules
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Services
+
+Attendance check-in
+(web/mobile)
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Giving
+
+Manual giving records
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Giving
+
+Online giving checkout
+page
+
+Yes
+
+No
+
+Yes
+
+Yes
+
+Events
+
+Event registrations
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Comms
+
+Bulk SMS/email
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Comms
+
+Automated sequences
+
+Limited
+
+No
+
+Yes
+
+Yes
+
+Website
+
+Template website on
+subdomain
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Website
+
+Custom domain & SEO
+settings
+
+Yes
+
+No
+
+Yes
+
+Yes
+
+Media
+
+Sermons & series
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Reports
+
+Weekly reports
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Reports
+
+Advanced analytics
+dashboards
+
+Yes
+
+No
+
+Yes
+
+Yes
+
+Mobile
+
+Staff Flutter app
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Mobile
+
+Member Flutter app
+
+Limited
+
+No
+
+Add-on
+
+Yes
+
+Security
+
+Audit logs
+
+Yes
+
+Yes
+
+Yes
+
+Yes
+
+Security
+
+Advanced security
+controls (Enterprise)
+
+Limited
+
+No
+
+No
+
+Yes
+
+12
+
+6. Technical Architecture
+6.1 Stack selection (your requested stack)
+Layer
+
+Technology
+
+Web (Church Admin + Super Admin + Websites)
+
+Next.js (React + TypeScript) with App Router,
+Tailwind CSS, shadcn/ui component system.
+
+Backend API
+
+Node.js TypeScript service (NestJS recommended
+for structure) exposing REST APIs (OpenAPI) for
+web and Flutter.
+
+ORM
+
+Prisma for schema, migrations, and typed data
+access.
+
+Database
+
+PostgreSQL (recommended) or MySQL.
+PostgreSQL preferred for reporting, JSON fields,
+and indexing.
+
+Auth + Mobile services
+
+Firebase Authentication for identity, FCM for
+push, Crashlytics/Analytics for mobile telemetry.
+
+Infra
+
+Docker + docker-compose for local/dev;
+containerized deployments for staging/prod.
+
+6.2 High-level system diagram (textual)
+Client layer → Edge routing → Web apps → API services → Data & integrations:
+Flutter (Staff/Member) | Browser (Church Admin / Super Admin) | Public Website Visitors
+↓
+↓
+↓
+Firebase Auth (Identity) + FCM (Push) — shared identity layer
+↓
+API Gateway / Backend (NestJS) — rate-limits, RBAC, audit logs
+↓
+PostgreSQL (tenant data) + Redis (cache/queues) + Object Storage (media)
+↓
+Payments (Stripe/Paystack/Flutterwave), Email/SMS Providers, Analytics
+
+6.3 Backend service structure (recommended)
+
+
+
+
+
+Monorepo (pnpm/turborepo): apps/web, apps/api, packages/ui, packages/shared, apps/mobile
+(Flutter separate repo).
+API modules: auth, tenants, members, services, attendance, giving, website, messaging, admin.
+Background jobs: imports/exports, email/SMS sending, weekly report generation, billing webhooks.
+API contract: OpenAPI + generated clients for web and Flutter.
+
+6.4 Multi-tenancy strategy
+Start with a shared database and shared schema, using a strict tenant_id discriminator on every multitenant table. Every API request resolves a tenant context (from subdomain, custom domain, or explicit
+tenant selection) and enforces isolation through query filters and authorization checks.
+
+
+
+
+
+Tenant resolution sources:
+Admin portals: user is linked to one or more tenants; active tenant is selected after login.
+Public websites: tenant is resolved from subdomain/custom domain in the request host header.
+Mobile apps: tenant is selected during onboarding or staff invite acceptance; stored in app state.
+
+6.5 Authentication and backend security model
+
+
+
+
+
+Flutter/Web uses Firebase Auth to sign in and receives an ID token (JWT).
+Backend verifies the Firebase ID token on every request, then loads the platform user + church role
+permissions.
+Sensitive actions create audit log records (who, what, tenant, timestamp, IP/device).
+Rate limiting for auth endpoints and messaging endpoints to prevent abuse.
+
+6.6 Data storage and media strategy
+
+
+
+
+
+Relational data in PostgreSQL (members, attendance, giving, events, website config).
+Media assets (photos, sermon files) stored in object storage; store URLs/metadata in SQL.
+CDN caching for public websites and media for fast global access.
+Plan-based quotas for storage, plus add-ons.
+
+6.7 Website builder architecture
+Website pages are stored as structured content (JSON blocks) tied to a tenant. Next.js renders these
+blocks server-side for SEO and performance. Publishing is immediate, with caching and invalidation for
+scale.
+
+
+
+
+
+Template system: prebuilt sections (hero, ministries grid, service times, giving CTA, sermon list).
+Theme tokens: colors, typography, spacing stored per tenant.
+Custom domain: DNS verification + automated certificate provisioning in production hosting
+environment.
+Forms pipeline: spam protection, notifications to staff, exports.
+
+6.8 Deployment and environments
+
+
+
+
+
+
+Local dev: docker-compose for Postgres + Redis + local S3-compatible storage (optional).
+Staging: one environment per branch or shared staging; seeded demo tenant.
+Production: separate DB, separate storage bucket, isolated secrets.
+CI/CD: build + test + lint; deploy web and api containers; run Prisma migrations safely.
+Backups: automated daily DB backups with retention policy.
+
+7. Data Model Overview
+Below is a high-level entity list and relationships. Detailed ERD will be produced during Sprint 0
+(Foundations).
+14
+
+Entity
+
+Purpose
+
+Tenant
+
+Church workspace: name, settings, plan, status.
+
+Branch
+
+Campuses/locations under a tenant.
+
+User
+
+Staff accounts with roles; linked to tenant(s).
+
+Role/Permission
+
+RBAC authorization system.
+
+Member
+
+People records; can belong to families; tagged.
+
+Family
+
+Family grouping and relationships.
+
+Visitor
+
+First-timer records; may convert to members.
+
+FollowUp
+
+Tasks/notes assigned to leaders for care.
+
+Service
+
+Service schedule definitions.
+
+Attendance
+
+Records per service/event; includes visitors.
+
+Event/Registration
+
+Events and signups.
+
+Fund/GivingTransaction
+
+Giving categories, donations, pledges.
+
+Pledge
+
+Commitments over time.
+
+FinanceEntry/Budget
+
+Income/expense and budgeting.
+
+Announcement
+
+Internal announcements and website posts.
+
+Sermon/Series/MediaAsset
+
+Sermon library and media.
+
+WebsitePage/ThemeSettings
+
+Website builder content + styling.
+
+Notification
+
+In-app messages; push queue.
+
+AuditLog
+
+Immutable activity log for sensitive operations.
+
+7.1 Example table fields (starter)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Member (simplified):
+id, tenant_id, branch_id
+first_name, last_name, gender (optional), dob (optional)
+phone, email, address
+status (active/inactive/transferred/deceased)
+tags (many-to-many), notes, created_at, updated_at
+Attendance (simplified):
+id, tenant_id, branch_id, service_id, date
+member_id (nullable), visitor_id (nullable)
+checkin_method (qr/manual), checked_in_by, timestamp
+GivingTransaction (simplified):
+id, tenant_id, branch_id, fund_id, donor_member_id (nullable)
+amount, currency, method (cash/mobile money/card), reference
+created_by, created_at, status (posted/reversed)
+
+15
+
+8. API Surface (High-Level)
+APIs will be versioned (e.g., /api/v1) and documented with OpenAPI. Examples:
+Auth & Tenant Context
+
+
+
+
+POST /auth/session (verify Firebase token, return app session context)
+GET /tenants (list tenants for user)
+POST /tenants (create tenant - signup only)
+
+Members & CRM
+
+
+
+
+GET /members, POST /members, PATCH /members/:id
+POST /visitors, GET /followups, POST /followups
+POST /imports/members (async job)
+
+Services & Attendance
+
+
+
+
+GET /services, POST /services
+POST /attendance/checkin
+GET /reports/weekly
+
+Giving & Finance
+
+
+
+POST /giving, GET /giving/summary
+POST /pledges, GET /statements/:memberId
+
+Website
+
+
+
+
+GET /website/pages, POST /website/pages
+PATCH /website/theme
+POST /website/domains/verify
+
+Messaging
+
+
+
+POST /messages/sms, POST /messages/email
+GET /messages/templates
+
+Super Admin
+
+
+
+GET /admin/tenants, PATCH /admin/tenants/:id/status
+GET /admin/billing, GET /admin/auditlogs
+
+8.1 Webhooks & integrations
+
+
+
+
+
+Payments: subscription webhooks (invoice paid/failed, subscription canceled).
+Messaging: delivery status callbacks (SMS/email).
+Website forms: spam protection and rate limits.
+Future integrations: Google Calendar sync, WhatsApp Business, accounting exports.
+
+9. UI/UX System
+9.1 Design principles
+
+
+
+Clean, modern, mobile-first layouts with consistent spacing and typography.
+Fast workflows for weekly operations: check-in, visitor capture, follow-up creation, report export.
+16
+
+
+
+
+Role-based navigation: users only see what they can access.
+Accessibility: contrast, keyboard navigation (web), scalable text (mobile).
+
+9.2 Web UI framework choices
+Use Tailwind CSS for styling and a high-quality component system for consistent UI. Recommended:
+shadcn/ui (Radix primitives) as the base component layer, extended with a design system.
+
+
+
+
+
+
+
+UI components to standardize:
+Data tables (filters, sorting, exports, bulk actions)
+Forms (validation, steps/wizards, autosave)
+Dashboards (cards, charts, insights)
+Modals, drawers, toasts, command palette
+Empty states, onboarding, paywall/upgrade prompts
+
+9.3 Flutter UI strategy
+
+
+
+
+
+Material 3 with custom theming (brand tokens aligned with web).
+Reusable widgets for forms, lists, and charts.
+Push-driven workflows for follow-ups and reminders.
+Deep links from notifications into exact screens (e.g., follow-up task).
+
+10. Security, Privacy, and Compliance
+
+
+
+
+
+
+
+Tenant isolation enforced at the API layer and in database queries.
+Least-privilege access with RBAC and secure defaults.
+Audit logging for sensitive actions: finance edits, member exports, role changes, impersonation.
+Encryption in transit (HTTPS). Store secrets in managed secret store in production.
+Rate limiting for auth and messaging endpoints; CAPTCHA on signup (Phase 2).
+Data export and deletion workflows per tenant (admin-controlled).
+
+10.1 Data backups and retention
+
+
+
+
+
+Daily automated backups with 30–90 days retention (depending on plan).
+Restore procedures tested monthly (Super Admin responsibility).
+Data retention policy for cancelled tenants (e.g., 60–180 days) before hard delete.
+Export: tenant admins can export members, giving, attendance at any time.
+
+11. Delivery Plan (Sprints & Milestones)
+We will build in phases to keep quality high while delivering usable value early. Below is a recommended
+roadmap that still keeps the full system design holistic from day one.
+
+11.1 Phase breakdown
+Phase
+
+Outcome
+
+Key Modules
+
+Sprint 0 (Foundations)
+
+Production-ready foundation
+
+Auth (Firebase), Tenancy, RBAC,
+Audit logs, CI/CD, Core DB
+
+Phase 1 (MVP)
+
+Churches can operate weekly +
+
+Members, Services, Attendance,
+
+17
+
+publish website
+
+Giving manual, Basic reports,
+Website templates, Superadmin
+basics
+
+Phase 2 (Growth)
+
+Automation + online giving +
+mobile depth
+
+Online giving, Segmentation,
+Automated follow-ups, Pro
+website features, Staff Flutter
+app v1
+
+Phase 3 (Scale)
+
+Enterprise features + advanced
+analytics
+
+Multi-campus scale, advanced
+security, integrations, member
+app, custom reporting
+
+11.2 Sprint 0 checklist (foundations)
+
+
+
+
+
+
+
+Repo setup (monorepo), CI pipeline, env management
+Prisma schema + migrations, tenant_id conventions
+Firebase Auth integration, session context endpoint
+RBAC + permission matrix, audit logs
+Billing plan objects + feature gating system (server + UI)
+First Super Admin screens (church directory, view tenant, suspend/resume)
+
+11.3 Definition of Done (DoD)
+
+
+
+
+
+
+
+Feature implemented with tests (unit + integration where applicable).
+Role permissions enforced server-side; UI only displays allowed actions.
+Audit logs written for sensitive actions.
+Accessible UI (keyboard navigation, labels, contrast).
+Performance acceptable (pagination, background jobs for imports/exports).
+Docs updated (API docs, admin help pages).
+
+12. Key Risks & Mitigations
+Risk
+
+Impact
+
+Mitigation
+
+Tenant data leakage
+
+Critical
+
+Strict tenant context +
+automated middleware + tests +
+audit trails.
+
+SMS/Email cost overrun
+
+High
+
+Plan quotas, add-ons, rate
+limits, approval workflow for big
+sends.
+
+Website custom domain
+complexity
+
+Medium
+
+Start with subdomains; add
+guided DNS verification +
+automation.
+
+Complexity creep
+
+High
+
+Phase discipline; keep
+accounting-lite in MVP; add
+deep accounting later.
+18
+
+Slow reporting on large datasets
+
+Medium
+
+Indexes, denormalized reporting
+tables, background aggregation
+jobs.
+
+Appendix A: Glossary
+Term
+
+Meaning
+
+Tenant
+
+A church workspace within the platform.
+
+RBAC
+
+Role-Based Access Control; permissions granted
+via roles.
+
+FCM
+
+Firebase Cloud Messaging; used for push
+notifications.
+
+Dunning
+
+Automated process to recover failed subscription
+payments.
+
+Template
+
+Prebuilt website layout and blocks that can be
+customized.
+
+Appendix B: Reference Documentation (suggested)
+
+
+
+
+Next.js multi-tenant guide and multi-tenant starter templates (official docs/templates).
+Firebase Authentication docs (ID token verification, sign-in providers).
+shadcn/ui documentation for Tailwind-based component systems.
+
+19
+
+

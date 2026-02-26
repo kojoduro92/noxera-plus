@@ -1,39 +1,54 @@
-import { Controller, Get, Post, Put, Body, Param, Headers, UnauthorizedException, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { FollowupsService } from './followups.service';
+import { AdminGuard } from '../auth/admin.guard';
+import type { RequestWithAuth } from '../auth/auth.types';
+import { resolveReadBranchScope, resolveWriteBranchScope } from '../auth/branch-scope';
 
+@UseGuards(AdminGuard)
 @Controller("followups")
 export class FollowupsController {
   constructor(private readonly followupsService: FollowupsService) {}
 
-  private getTenantId(headers: any) {
-    const tenantId = headers["x-tenant-id"];
-    if (!tenantId) throw new UnauthorizedException("Missing x-tenant-id header");
-    return tenantId;
-  }
-
   @Post()
   async createFollowUp(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Body() body: { memberId: string; type: string; notes?: string; dueDate?: string; assignedTo?: string; branchId?: string },
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.followupsService.createFollowUp(tenantId, body);
+    const session = request.authContext!;
+    const scope = resolveWriteBranchScope(session, body.branchId);
+    return this.followupsService.createFollowUp(
+      session.tenantId!,
+      { ...body, branchId: scope.branchId },
+      session.branchScopeMode === 'RESTRICTED' ? session.allowedBranchIds : undefined,
+    );
   }
 
   @Get()
-  async getFollowUps(@Headers() headers: any, @Query("branchId") branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.followupsService.getFollowUps(tenantId, branchId);
+  async getFollowUps(@Req() request: RequestWithAuth, @Query("branchId") branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.followupsService.getFollowUps(
+      session.tenantId!,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Put(":id/status")
   async updateFollowUpStatus(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Param("id") id: string,
     @Body() body: { status: string },
     @Query("branchId") branchId?: string,
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.followupsService.updateFollowUpStatus(tenantId, id, body.status, branchId);
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.followupsService.updateFollowUpStatus(
+      session.tenantId!,
+      id,
+      body.status,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 }

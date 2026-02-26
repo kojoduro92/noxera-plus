@@ -40,6 +40,7 @@ export class WebsiteService {
   }
 
   async updateTheme(tenantId: string, themeConfig: any) {
+    await this.getWebsite(tenantId);
     return this.prisma.website.update({
       where: { tenantId },
       data: { themeConfig },
@@ -57,14 +58,36 @@ export class WebsiteService {
     });
   }
 
-  async updatePage(pageId: string, data: { title?: string; isPublished?: boolean }) {
+  async updatePage(tenantId: string, pageId: string, data: { title?: string; isPublished?: boolean }) {
+    const page = await this.prisma.page.findFirst({
+      where: {
+        id: pageId,
+        website: { tenantId },
+      },
+      select: { id: true },
+    });
+    if (!page) {
+      throw new NotFoundException('Page not found for this tenant');
+    }
+
     return this.prisma.page.update({
       where: { id: pageId },
       data,
     });
   }
 
-  async addSection(pageId: string, data: { type: string; content: any; order: number }) {
+  async addSection(tenantId: string, pageId: string, data: { type: string; content: any; order: number }) {
+    const page = await this.prisma.page.findFirst({
+      where: {
+        id: pageId,
+        website: { tenantId },
+      },
+      select: { id: true },
+    });
+    if (!page) {
+      throw new NotFoundException('Page not found for this tenant');
+    }
+
     return this.prisma.section.create({
       data: {
         pageId,

@@ -1,51 +1,78 @@
-import { Controller, Get, Post, Put, Body, Param, Headers, UnauthorizedException, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { MessagesService } from './messages.service';
+import { AdminGuard } from '../auth/admin.guard';
+import type { RequestWithAuth } from '../auth/auth.types';
+import { resolveReadBranchScope, resolveWriteBranchScope } from '../auth/branch-scope';
 
+@UseGuards(AdminGuard)
 @Controller("messages")
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
-  private getTenantId(headers: any) {
-    const tenantId = headers["x-tenant-id"];
-    if (!tenantId) throw new UnauthorizedException("Missing x-tenant-id header");
-    return tenantId;
-  }
-
   @Post()
   async createMessage(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Body() body: { type: string; audience: string; subject?: string; body: string; branchId?: string },
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.messagesService.createMessage(tenantId, body);
+    const session = request.authContext!;
+    const scope = resolveWriteBranchScope(session, body.branchId);
+    return this.messagesService.createMessage(
+      session.tenantId!,
+      { ...body, branchId: scope.branchId },
+      session.branchScopeMode === 'RESTRICTED' ? session.allowedBranchIds : undefined,
+    );
   }
 
   @Get()
-  async getMessages(@Headers() headers: any, @Query("branchId") branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.messagesService.getMessages(tenantId, branchId);
+  async getMessages(@Req() request: RequestWithAuth, @Query("branchId") branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.messagesService.getMessages(
+      session.tenantId!,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Get(":id")
-  async getMessageById(@Headers() headers: any, @Param("id") id: string, @Query("branchId") branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.messagesService.getMessageById(tenantId, id, branchId);
+  async getMessageById(@Req() request: RequestWithAuth, @Param("id") id: string, @Query("branchId") branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.messagesService.getMessageById(
+      session.tenantId!,
+      id,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Put(":id/send")
-  async sendMessage(@Headers() headers: any, @Param("id") id: string, @Query("branchId") branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.messagesService.sendMessage(tenantId, id, branchId);
+  async sendMessage(@Req() request: RequestWithAuth, @Param("id") id: string, @Query("branchId") branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.messagesService.sendMessage(
+      session.tenantId!,
+      id,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Put(":id/status")
   async updateMessageStatus(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Param("id") id: string,
     @Body() body: { status: string },
     @Query("branchId") branchId?: string,
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.messagesService.updateMessageStatus(tenantId, id, body.status, branchId);
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.messagesService.updateMessageStatus(
+      session.tenantId!,
+      id,
+      body.status,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 }

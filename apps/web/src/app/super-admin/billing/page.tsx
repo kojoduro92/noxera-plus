@@ -2,6 +2,9 @@
 
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { BillingTenantRow, PaginatedResponse, PlanSummary } from "@/lib/super-admin-types";
+import { formatMoney } from "@/lib/platform-options";
+import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
+import { downloadRowsAsCsv } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -13,8 +16,10 @@ type BillingListResponse = PaginatedResponse<BillingTenantRow> & {
 };
 
 const BILLING_STATUSES = ["Active", "Past Due", "Suspended", "Cancelled"] as const;
+type SortOption = "tenant" | "status" | "plan" | "created";
 
 export default function BillingPlansPage() {
+  const { personalization } = usePlatformPersonalization();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -39,6 +44,8 @@ export default function BillingPlansPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("tenant");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     setDraftSearch(search);
@@ -139,6 +146,27 @@ export default function BillingPlansPage() {
   };
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.limit));
+  const sortedItems = useMemo(() => {
+    const next = [...data.items];
+    const direction = sortDirection === "asc" ? 1 : -1;
+    next.sort((a, b) => {
+      if (sortBy === "tenant") return a.name.localeCompare(b.name) * direction;
+      if (sortBy === "status") return a.status.localeCompare(b.status) * direction;
+      if (sortBy === "plan") return (a.plan?.name ?? "").localeCompare(b.plan?.name ?? "") * direction;
+      return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
+    });
+    return next;
+  }, [data.items, sortBy, sortDirection]);
+
+  const exportRows = () => {
+    downloadRowsAsCsv("super-admin-billing-tenants.csv", sortedItems, [
+      { label: "Tenant", value: (row) => row.name },
+      { label: "Domain", value: (row) => (row.domain ? `${row.domain}.noxera.plus` : "") },
+      { label: "Plan", value: (row) => row.plan?.name ?? "No plan" },
+      { label: "Status", value: (row) => row.status },
+      { label: "Created", value: (row) => new Date(row.createdAt).toLocaleDateString() },
+    ]);
+  };
 
   return (
     <div className="space-y-6">
@@ -149,7 +177,7 @@ export default function BillingPlansPage() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Current MRR</p>
-          <p className="mt-3 text-3xl font-black text-slate-900">${data.summary.mrr}</p>
+          <p className="mt-3 text-3xl font-black text-slate-900">{formatMoney(data.summary.mrr, personalization.defaultCurrency, personalization.defaultLocale)}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Plans Configured</p>
@@ -158,7 +186,7 @@ export default function BillingPlansPage() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-6">
           <label className="space-y-1">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Search</span>
             <input
@@ -207,6 +235,33 @@ export default function BillingPlansPage() {
               Apply Filters
             </button>
           </div>
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as SortOption)}
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="tenant">Sort: Tenant</option>
+            <option value="status">Sort: Status</option>
+            <option value="plan">Sort: Plan</option>
+            <option value="created">Sort: Created</option>
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={sortDirection}
+              onChange={(event) => setSortDirection(event.target.value as "asc" | "desc")}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="asc">Asc</option>
+              <option value="desc">Desc</option>
+            </select>
+            <button
+              type="button"
+              onClick={exportRows}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
+            >
+              CSV
+            </button>
+          </div>
         </div>
       </div>
 
@@ -253,14 +308,14 @@ export default function BillingPlansPage() {
                     </td>
                   </tr>
                 ))
-              ) : data.items.length === 0 ? (
+              ) : sortedItems.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-5 py-12 text-center text-sm text-slate-500">
                     No billing tenants found for the current filter set.
                   </td>
                 </tr>
               ) : (
-                data.items.map((tenant) => (
+                sortedItems.map((tenant) => (
                   <tr key={tenant.id}>
                     <td className="px-5 py-4">
                       <p className="text-sm font-semibold text-slate-900">{tenant.name}</p>
@@ -276,7 +331,7 @@ export default function BillingPlansPage() {
                         <option value="">No plan</option>
                         {plans.map((plan) => (
                           <option key={plan.id} value={plan.id}>
-                            {plan.name} (${plan.price})
+                            {plan.name} ({formatMoney(plan.price, personalization.defaultCurrency, personalization.defaultLocale)})
                           </option>
                         ))}
                       </select>

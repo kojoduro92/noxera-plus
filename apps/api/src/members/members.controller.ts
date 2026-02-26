@@ -1,56 +1,115 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { MembersService } from './members.service';
+import { AdminGuard } from '../auth/admin.guard';
+import type { RequestWithAuth } from '../auth/auth.types';
+import { resolveReadBranchScope, resolveWriteBranchScope } from '../auth/branch-scope';
 
+type MemberWritePayload = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  maritalStatus?: string;
+  occupation?: string;
+  avatarUrl?: string;
+  preferredContactMethod?: string;
+  membershipDate?: string;
+  baptismDate?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  notes?: string;
+  customFields?: Record<string, unknown>;
+  status?: string;
+  tags?: string[];
+  branchId?: string;
+};
+
+type MemberUpdatePayload = Partial<MemberWritePayload>;
+
+@UseGuards(AdminGuard)
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
-  // Middleware or Guards should extract Tenant ID from the authenticated user's session
-  // For MVP prototyping without full JWT interceptors, we can accept it via Headers
-  private getTenantId(headers: any) {
-    const tenantId = headers['x-tenant-id'];
-    if (!tenantId) throw new UnauthorizedException('Missing x-tenant-id header');
-    return tenantId;
-  }
-
   @Post()
   async createMember(
-    @Headers() headers: any,
-    @Body() body: { firstName: string; lastName: string; email?: string; phone?: string; status?: string; branchId?: string },
+    @Req() request: RequestWithAuth,
+    @Body() body: MemberWritePayload,
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.membersService.createMember(tenantId, body);
+    const session = request.authContext!;
+    const branchScope = resolveWriteBranchScope(session, body.branchId);
+    return this.membersService.createMember(session.tenantId!, {
+      ...body,
+      branchId: branchScope.branchId,
+    });
   }
 
   @Get()
-  async getMembers(@Headers() headers: any) {
-    const tenantId = this.getTenantId(headers);
-    const branchId = headers["x-branch-id"]; // Optional branchId from header
-    return this.membersService.getMembers(tenantId, branchId);
+  async getMembers(
+    @Req() request: RequestWithAuth,
+    @Query('branchId') branchId?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    const session = request.authContext!;
+    const branchScope = resolveReadBranchScope(session, branchId);
+    return this.membersService.getMembers(session.tenantId!, {
+      branchId: branchScope.branchId,
+      allowedBranchIds: session.branchScopeMode === 'RESTRICTED' ? (branchScope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+      status,
+      search,
+    });
   }
 
   @Get(':id')
-  async getMemberById(@Headers() headers: any, @Param("id") id: string) {
-    const tenantId = this.getTenantId(headers);
-    const branchId = headers["x-branch-id"]; // Optional branchId from header
-    return this.membersService.getMemberById(id, tenantId, branchId);
+  async getMemberById(@Req() request: RequestWithAuth, @Param("id") id: string, @Query('branchId') branchId?: string) {
+    const session = request.authContext!;
+    const branchScope = resolveReadBranchScope(session, branchId);
+    return this.membersService.getMemberById(
+      id,
+      session.tenantId!,
+      branchScope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (branchScope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Put(':id')
   async updateMember(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Param('id') id: string,
-    @Body() body: { firstName?: string; lastName?: string; email?: string; phone?: string; status?: string; branchId?: string },
+    @Body() body: MemberUpdatePayload,
   ) {
-    const tenantId = this.getTenantId(headers);
-    const branchId = headers["x-branch-id"]; // Optional branchId from header
-    return this.membersService.updateMember(id, tenantId, { ...body, branchId });
+    const session = request.authContext!;
+    const writeScope = resolveWriteBranchScope(session, body.branchId);
+    return this.membersService.updateMember(
+      id,
+      session.tenantId!,
+      {
+        ...body,
+        branchId: writeScope.branchId ?? body.branchId,
+      },
+      session.branchScopeMode === 'RESTRICTED' ? session.allowedBranchIds : undefined,
+    );
   }
 
   @Delete(':id')
-  async deleteMember(@Headers() headers: any, @Param('id') id: string) {
-    const tenantId = this.getTenantId(headers);
-    const branchId = headers["x-branch-id"]; // Optional branchId from header
-    return this.membersService.deleteMember(id, tenantId, branchId);
+  async deleteMember(@Req() request: RequestWithAuth, @Param('id') id: string, @Query('branchId') branchId?: string) {
+    const session = request.authContext!;
+    const branchScope = resolveReadBranchScope(session, branchId);
+    return this.membersService.deleteMember(
+      id,
+      session.tenantId!,
+      branchScope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (branchScope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 }

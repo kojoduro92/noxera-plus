@@ -1,6 +1,8 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import type { Auth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import type { FirebaseStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import type { Analytics } from "firebase/analytics";
 import type { FirebaseApp } from "firebase/app";
@@ -18,11 +20,13 @@ const firebaseConfig = {
 // Initialize Firebase safely, allowing it to bypass initialization if env vars are missing
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
+let storage: FirebaseStorage | null = null;
 let analytics: Analytics | null = null;
 
 if (firebaseConfig.apiKey) {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
+  storage = getStorage(app);
   if (typeof window !== "undefined") {
     void isSupported().then((supported) => {
       if (supported && app) {
@@ -34,7 +38,8 @@ if (firebaseConfig.apiKey) {
   console.warn("Firebase API key is missing. Authentication will not work properly.");
   app = null;
   auth = null;
+  storage = null;
   analytics = null;
 }
 
-export { app, auth, analytics };
+export { app, auth, storage, analytics };

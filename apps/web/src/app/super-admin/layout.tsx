@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { auth as firebaseAuth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { PortalLink, PortalSwitcher } from "@/components/console/portal-switcher";
+import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
 
 type NavItem = {
   name: string;
@@ -41,6 +43,24 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    name: "Users",
+    href: "/super-admin/users",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 14a4 4 0 10-8 0m8 0a6 6 0 013 5.196M8 14a6 6 0 00-3 5.196M13 8a4 4 0 11-2 0" />
+      </svg>
+    ),
+  },
+  {
+    name: "Roles",
+    href: "/super-admin/roles",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6l3 3-3 3-3-3 3-3zm0 0V3m0 9v9m9-9h-3M6 12H3" />
+      </svg>
+    ),
+  },
+  {
     name: "Onboarding",
     href: "/super-admin/onboarding",
     icon: (
@@ -68,11 +88,109 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    name: "Feature Flags",
+    href: "/super-admin/feature-flags",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 7h14M5 12h14M5 17h14M8 7v10m8-10v10" />
+      </svg>
+    ),
+  },
+  {
+    name: "Content Hub",
+    href: "/super-admin/content",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h10M7 16h6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+      </svg>
+    ),
+  },
+  {
+    name: "System",
+    href: "/super-admin/system",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 3a2.25 2.25 0 00-2.122 1.5l-.222.666a2.25 2.25 0 01-1.424 1.424l-.666.222a2.25 2.25 0 000 4.244l.666.222a2.25 2.25 0 011.424 1.424l.222.666a2.25 2.25 0 004.244 0l.222-.666a2.25 2.25 0 011.424-1.424l.666-.222a2.25 2.25 0 000-4.244l-.666-.222a2.25 2.25 0 01-1.424-1.424l-.222-.666A2.25 2.25 0 009.75 3zM12 15.75A3.75 3.75 0 1012 8.25a3.75 3.75 0 000 7.5z" />
+      </svg>
+    ),
+  },
+  {
     name: "Support",
     href: "/super-admin/support",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Notifications",
+    href: "/super-admin/notifications",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+      </svg>
+    ),
+  },
+  {
+    name: "Platform Settings",
+    href: "/super-admin/settings",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l.7 2.147a1 1 0 00.95.69h2.258c.969 0 1.371 1.24.588 1.81l-1.827 1.328a1 1 0 00-.364 1.118l.698 2.148c.3.921-.755 1.688-1.538 1.118l-1.828-1.328a1 1 0 00-1.175 0l-1.827 1.328c-.784.57-1.838-.197-1.539-1.118l.699-2.148a1 1 0 00-.364-1.118L6.553 7.574c-.783-.57-.38-1.81.588-1.81h2.257a1 1 0 00.951-.69l.7-2.147zM4 18h16M7 22h10" />
+      </svg>
+    ),
+  },
+];
+
+const portalLinks: PortalLink[] = [
+  {
+    label: "SaaS Home",
+    href: "/",
+    description: "Open the public Noxera Plus website.",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2 7-7 7 7 2 2M5 10v10h14V10" />
+      </svg>
+    ),
+  },
+  {
+    label: "Church Admin Portal",
+    href: "/login",
+    description: "Switch into church-level operations.",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3h14a2 2 0 012 2v14H3V5a2 2 0 012-2zm3 6h8M8 13h8" />
+      </svg>
+    ),
+  },
+  {
+    label: "Public Signup",
+    href: "/signup",
+    description: "Review the self-serve church onboarding journey.",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v14m7-7H5" />
+      </svg>
+    ),
+  },
+  {
+    label: "Website Preview",
+    href: "/grace",
+    description: "Preview a public church website template.",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM3.6 9h16.8M3.6 15h16.8" />
+      </svg>
+    ),
+  },
+  {
+    label: "Docs & Help",
+    href: "/docs",
+    description: "Open product docs, onboarding guides, and troubleshooting.",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
       </svg>
     ),
   },
@@ -86,10 +204,17 @@ function getPageTitle(pathname: string): string {
   if (pathname === "/super-admin/analytics") return "Analytics Report";
   if (pathname.startsWith("/super-admin/churches/")) return "Church Details";
   if (pathname === "/super-admin/churches") return "Churches Directory";
+  if (pathname === "/super-admin/users") return "Platform Users";
+  if (pathname === "/super-admin/roles") return "Platform Roles";
   if (pathname === "/super-admin/onboarding") return "Church Onboarding";
   if (pathname === "/super-admin/billing") return "Billing & Plans";
   if (pathname === "/super-admin/audit-logs") return "Security & Audit";
+  if (pathname === "/super-admin/feature-flags") return "Feature Flags";
+  if (pathname === "/super-admin/content") return "Content Hub";
+  if (pathname === "/super-admin/system") return "System Controls";
   if (pathname === "/super-admin/support") return "Support Center";
+  if (pathname === "/super-admin/notifications") return "Notifications";
+  if (pathname === "/super-admin/settings") return "Platform Settings";
   return "System Management";
 }
 
@@ -105,6 +230,8 @@ export default function SuperAdminLayout({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [sessionEmail, setSessionEmail] = useState("super-admin@noxera.plus");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const { personalization } = usePlatformPersonalization();
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const pageTitle = useMemo(() => getPageTitle(pathname), [pathname]);
   const profileInitials = useMemo(() => {
@@ -141,13 +268,21 @@ export default function SuperAdminLayout({
 
     const loadSession = async () => {
       try {
-        const response = await fetch("/api/super-admin/session", { cache: "no-store" });
-        if (!response.ok) {
-          return;
+        const [sessionResponse, notificationResponse] = await Promise.all([
+          fetch("/api/super-admin/session", { cache: "no-store" }),
+          fetch("/api/super-admin/platform/notifications?limit=1&unreadOnly=1", { cache: "no-store" }),
+        ]);
+
+        if (sessionResponse.ok) {
+          const payload = (await sessionResponse.json().catch(() => ({}))) as { email?: string };
+          if (payload.email) {
+            setSessionEmail(payload.email);
+          }
         }
-        const payload = (await response.json().catch(() => ({}))) as { email?: string };
-        if (payload.email) {
-          setSessionEmail(payload.email);
+
+        if (notificationResponse.ok) {
+          const payload = (await notificationResponse.json().catch(() => ({}))) as { unreadCount?: number };
+          setNotificationCount(typeof payload.unreadCount === "number" ? payload.unreadCount : 0);
         }
       } catch {
         // Keep layout stable even if session lookup fails temporarily.
@@ -215,15 +350,24 @@ export default function SuperAdminLayout({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-indigo-900/60 bg-indigo-950 text-white shadow-2xl transition-all duration-300 lg:static lg:inset-auto lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-indigo-900/60 text-white shadow-2xl transition-all duration-300 lg:static lg:inset-auto lg:translate-x-0 ${
           isSidebarCollapsed ? "lg:w-24" : "lg:w-72"
         } ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ background: `linear-gradient(180deg, ${personalization.brandPrimaryColor} 0%, #1e1b4b 70%)` }}
       >
         <div className="flex items-center justify-between border-b border-indigo-900/60 px-4 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500 text-xs font-black text-white shadow-inner">N+</div>
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-indigo-500 text-xs font-black text-white shadow-inner">
+              {personalization.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={personalization.logoUrl} alt="Platform logo" className="h-full w-full object-contain" />
+              ) : (
+                "N+"
+              )}
+            </div>
             <span className={`text-2xl font-black tracking-tighter ${isSidebarCollapsed ? "lg:hidden" : ""}`}>
-              NOXERA <span className="text-indigo-400">PLUS</span>
+              {personalization.orgName.split(" ")[0]?.toUpperCase() ?? "NOXERA"}{" "}
+              <span className="text-indigo-300">{personalization.orgName.split(" ").slice(1).join(" ").toUpperCase() || "PLUS"}</span>
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -255,26 +399,29 @@ export default function SuperAdminLayout({
         </div>
 
         <nav className={`flex-1 space-y-1 overflow-y-auto py-2 ${isSidebarCollapsed ? "px-2" : "px-4"}`}>
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              title={item.name}
-              onClick={() => setIsSidebarOpen(false)}
-              className={`group flex items-center rounded-xl px-4 py-3 transition-all duration-200 ${
-                isSidebarCollapsed ? "lg:justify-center lg:px-3" : ""
-              } ${
-                pathname === item.href
-                  ? "bg-gradient-to-r from-indigo-600 to-violet-500 text-white shadow-lg shadow-indigo-900/30"
-                  : "text-indigo-100 hover:bg-indigo-900/50 hover:text-white"
-              }`}
-            >
-              <span className={`${pathname === item.href ? "text-white" : "text-indigo-400 group-hover:text-indigo-200"} transition-colors`}>
-                {item.icon}
-              </span>
-              <span className={`ml-3 text-sm font-bold ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.name}</span>
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const active = pathname === item.href || (item.href !== "/super-admin" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                title={item.name}
+                onClick={() => setIsSidebarOpen(false)}
+                className={`group flex items-center rounded-xl px-4 py-3 transition-all duration-200 ${
+                  isSidebarCollapsed ? "lg:justify-center lg:px-3" : ""
+                } ${
+                  active
+                    ? "nx-brand-gradient text-white shadow-lg shadow-indigo-900/30"
+                    : "text-indigo-100 hover:bg-indigo-900/50 hover:text-white"
+                }`}
+              >
+                <span className={`${active ? "text-white" : "text-indigo-400 group-hover:text-indigo-200"} transition-colors`}>
+                  {item.icon}
+                </span>
+                <span className={`ml-3 text-sm font-bold ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.name}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="border-t border-indigo-900/60 p-4">
@@ -329,8 +476,8 @@ export default function SuperAdminLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
+            <Link
+              href="/super-admin/notifications"
               className={`relative p-2.5 rounded-xl border transition ${
                 isDarkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700" : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
               }`}
@@ -339,15 +486,23 @@ export default function SuperAdminLayout({
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
               </svg>
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-500 text-[9px] font-black text-white flex items-center justify-center">3</span>
-            </button>
+              {notificationCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white"
+                  style={{ backgroundColor: personalization.brandPrimaryColor }}
+                >
+                  {Math.min(notificationCount, 9)}
+                </span>
+              )}
+            </Link>
 
             <Link
               href="/super-admin/onboarding"
-              className="hidden md:inline-flex px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition bg-indigo-600 hover:bg-indigo-500 !text-white shadow-sm"
+              className="hidden md:inline-flex rounded-xl nx-brand-btn px-4 py-2.5 text-xs font-black uppercase tracking-wider transition hover:opacity-90 !text-white shadow-sm"
             >
               Register Church
             </Link>
+            <PortalSwitcher links={portalLinks} isDarkMode={isDarkMode} />
 
             <div className="relative" ref={profileMenuRef}>
               <button
@@ -361,7 +516,7 @@ export default function SuperAdminLayout({
                     : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                 }`}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-[11px] font-black !text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-black !text-white" style={{ background: `linear-gradient(135deg, ${personalization.brandPrimaryColor}, ${personalization.brandAccentColor})` }}>
                   {profileInitials}
                 </span>
                 <span className="hidden text-left md:block">
@@ -402,6 +557,30 @@ export default function SuperAdminLayout({
                       Switch to {isDarkMode ? "Light" : "Dark"} mode
                     </button>
                     <Link
+                      href="/super-admin/notifications"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+                      </svg>
+                      Notifications
+                    </Link>
+                    <Link
+                      href="/super-admin/settings"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l.7 2.147a1 1 0 00.95.69h2.258c.969 0 1.371 1.24.588 1.81l-1.827 1.328a1 1 0 00-.364 1.118l.698 2.148c.3.921-.755 1.688-1.538 1.118l-1.828-1.328a1 1 0 00-1.175 0l-1.827 1.328c-.784.57-1.838-.197-1.539-1.118l.699-2.148a1 1 0 00-.364-1.118L6.553 7.574c-.783-.57-.38-1.81.588-1.81h2.257a1 1 0 00.951-.69l.7-2.147zM4 18h16M7 22h10" />
+                      </svg>
+                      Platform settings
+                    </Link>
+                    <Link
                       href="/super-admin/analytics"
                       onClick={() => setProfileMenuOpen(false)}
                       className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
@@ -412,6 +591,30 @@ export default function SuperAdminLayout({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3v18M6 8v13M16 11v10M21 6v15" />
                       </svg>
                       Analytics report
+                    </Link>
+                    <Link
+                      href="/super-admin/users"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 14a4 4 0 10-8 0m8 0a6 6 0 013 5.196M8 14a6 6 0 00-3 5.196M13 8a4 4 0 11-2 0" />
+                      </svg>
+                      Platform users
+                    </Link>
+                    <Link
+                      href="/super-admin/roles"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6l3 3-3 3-3-3 3-3zm0 0V3m0 9v9m9-9h-3M6 12H3" />
+                      </svg>
+                      Platform roles
                     </Link>
                     <Link
                       href="/super-admin/onboarding"
@@ -438,6 +641,42 @@ export default function SuperAdminLayout({
                       Security & audit
                     </Link>
                     <Link
+                      href="/super-admin/feature-flags"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 7h14M5 12h14M5 17h14M8 7v10m8-10v10" />
+                      </svg>
+                      Feature flags
+                    </Link>
+                    <Link
+                      href="/super-admin/content"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h10M7 16h6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                      </svg>
+                      Content hub
+                    </Link>
+                    <Link
+                      href="/super-admin/system"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 3a2.25 2.25 0 00-2.122 1.5l-.222.666a2.25 2.25 0 01-1.424 1.424l-.666.222a2.25 2.25 0 000 4.244l.666.222a2.25 2.25 0 011.424 1.424l.222.666a2.25 2.25 0 004.244 0l.222-.666a2.25 2.25 0 011.424-1.424l.666-.222a2.25 2.25 0 000-4.244l-.666-.222a2.25 2.25 0 01-1.424-1.424l-.222-.666A2.25 2.25 0 009.75 3zM12 15.75A3.75 3.75 0 1012 8.25a3.75 3.75 0 000 7.5z" />
+                      </svg>
+                      System controls
+                    </Link>
+                    <Link
                       href="/super-admin/support"
                       onClick={() => setProfileMenuOpen(false)}
                       className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
@@ -448,6 +687,30 @@ export default function SuperAdminLayout({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
                       Support center
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Church admin portal
+                    </Link>
+                    <Link
+                      href="/"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${
+                        isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2 7-7 7 7 2 2M5 10v10h14V10" />
+                      </svg>
+                      SaaS home page
                     </Link>
                     <button
                       type="button"

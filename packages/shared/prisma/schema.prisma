@@ -32,6 +32,9 @@ model Tenant {
   supportTickets SupportTicket[]
   branches    Branch[]
   website     Website?
+  notifications Notification[]
+  reminderSchedules ReminderSchedule[]
+  outboxMessages OutboxMessage[]
 }
 
 model Branch {
@@ -39,6 +42,7 @@ model Branch {
   tenantId  String
   name      String
   location  String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -52,6 +56,7 @@ model Branch {
   events     Event[]
   followUps  FollowUp[]
   messages   Message[]
+  userAccess UserBranchAccess[]
 }
 
 
@@ -76,6 +81,13 @@ model User {
   name         String
   roleId       String?
   isSuperAdmin Boolean  @default(false)
+  status       String   @default("Invited")
+  branchScopeMode String @default("ALL")
+  invitedAt    DateTime @default(now())
+  invitedByUserId String?
+  activatedAt  DateTime?
+  lastLoginAt  DateTime?
+  lastSignInProvider String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -83,18 +95,36 @@ model User {
   branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
   role      Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
   auditLogs AuditLog[]
+  branchAccess UserBranchAccess[]
+  notifications Notification[]
+  notificationPreferences NotificationPreference[]
 }
 
 model Role {
   id          String   @id @default(uuid())
   tenantId    String
   name        String
+  isSystem    Boolean  @default(false)
   permissions String[] // e.g. ["members.view.any", "members.edit.any"]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users  User[]
+
+  @@unique([tenantId, name])
+}
+
+model UserBranchAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
 }
 
 model AuditLog {
@@ -116,9 +146,28 @@ model Member {
   tenantId  String
   branchId  String?
   firstName String
+  middleName String?
   lastName  String
   email     String?
   phone     String?
+  gender    String?
+  dateOfBirth DateTime?
+  maritalStatus String?
+  occupation String?
+  avatarUrl String?
+  preferredContactMethod String?
+  membershipDate DateTime?
+  baptismDate DateTime?
+  addressLine1 String?
+  addressLine2 String?
+  city      String?
+  state     String?
+  postalCode String?
+  country   String?
+  emergencyContactName String?
+  emergencyContactPhone String?
+  notes     String?
+  customFields Json?
   status    String   @default("Active")
   tags      String[] // e.g. ["Youth", "Choir", "FirstTimer"]
   createdAt DateTime @default(now())
@@ -313,4 +362,103 @@ model GivingTransaction {
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch  Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
   member  Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id           String   @id @default(uuid())
+  tenantId     String?
+  scope        String   @default("tenant")
+  type         String
+  title        String
+  body         String
+  severity     String   @default("info")
+  targetUserId String?
+  targetEmail  String?
+  meta         Json?
+  readAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  targetUser User?   @relation(fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([scope, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([targetEmail, createdAt])
+}
+
+model NotificationPreference {
+  id        String   @id @default(uuid())
+  userId    String
+  channel   String
+  category  String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, category])
+  @@index([userId, channel])
+}
+
+model ReminderSchedule {
+  id              String   @id @default(uuid())
+  tenantId        String?
+  scope           String   @default("platform")
+  eventType       String
+  cadence         String
+  isActive        Boolean  @default(true)
+  triggerOffsetDays Int?
+  lastTriggeredAt DateTime?
+  nextTriggerAt   DateTime?
+  escalationState String?
+  meta            Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([scope, eventType, isActive])
+  @@index([tenantId, eventType])
+}
+
+model OutboxMessage {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  templateId  String
+  recipient   String
+  payload     Json?
+  status      String   @default("Pending")
+  retryCount  Int      @default(0)
+  sentAt      DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([tenantId, status])
+}
+
+model PlatformSetting {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  value         Json
+  updatedByEmail String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  description  String?
+  enabled      Boolean  @default(false)
+  rolloutStage String   @default("internal")
+  owner        String?
+  tenantCohort String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

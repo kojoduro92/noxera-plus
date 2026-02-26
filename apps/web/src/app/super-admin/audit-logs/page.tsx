@@ -2,6 +2,7 @@
 
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { AuditLogRow, PaginatedResponse } from "@/lib/super-admin-types";
+import { downloadRowsAsCsv } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -32,6 +33,8 @@ const initialPageState: PaginatedResponse<AuditLogRow> = {
   total: 0,
 };
 
+type SortOption = "timestamp" | "action" | "resource" | "tenant";
+
 export default function AuditLogsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -54,6 +57,8 @@ export default function AuditLogsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("timestamp");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     setDraftFilters(activeFilters);
@@ -100,6 +105,29 @@ export default function AuditLogsPage() {
   };
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.limit));
+  const sortedItems = useMemo(() => {
+    const next = [...data.items];
+    const direction = sortDirection === "asc" ? 1 : -1;
+
+    next.sort((a, b) => {
+      if (sortBy === "timestamp") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
+      if (sortBy === "action") return a.action.localeCompare(b.action) * direction;
+      if (sortBy === "resource") return a.resource.localeCompare(b.resource) * direction;
+      return (a.tenant?.name ?? "").localeCompare(b.tenant?.name ?? "") * direction;
+    });
+
+    return next;
+  }, [data.items, sortBy, sortDirection]);
+
+  const exportRows = () => {
+    downloadRowsAsCsv("super-admin-audit-logs.csv", sortedItems, [
+      { label: "Timestamp", value: (row) => new Date(row.createdAt).toLocaleString() },
+      { label: "Tenant", value: (row) => row.tenant?.name ?? "Unknown tenant" },
+      { label: "Actor", value: (row) => row.user?.email ?? row.user?.name ?? "System" },
+      { label: "Action", value: (row) => row.action },
+      { label: "Resource", value: (row) => row.resource },
+    ]);
+  };
 
   return (
     <div className="space-y-6">
@@ -156,7 +184,32 @@ export default function AuditLogsPage() {
             />
           </label>
         </div>
-        <div className="flex gap-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:w-[460px]">
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as SortOption)}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
+            <option value="timestamp">Sort: Timestamp</option>
+            <option value="action">Sort: Action</option>
+            <option value="resource">Sort: Resource</option>
+            <option value="tenant">Sort: Tenant</option>
+          </select>
+          <select
+            value={sortDirection}
+            onChange={(event) => setSortDirection(event.target.value as "asc" | "desc")}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </select>
+          <button
+            type="button"
+            onClick={exportRows}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
+            Download CSV
+          </button>
           <button
             type="button"
             onClick={applyFilters}
@@ -210,14 +263,14 @@ export default function AuditLogsPage() {
                     </td>
                   </tr>
                 ))
-              ) : data.items.length === 0 ? (
+              ) : sortedItems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-12 text-center text-sm text-slate-500">
                     No audit logs match the current filters.
                   </td>
                 </tr>
               ) : (
-                data.items.map((log) => (
+                sortedItems.map((log) => (
                   <tr key={log.id}>
                     <td className="px-5 py-4 text-sm text-slate-600">{new Date(log.createdAt).toLocaleString()}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-900">{log.tenant?.name ?? "Unknown tenant"}</td>

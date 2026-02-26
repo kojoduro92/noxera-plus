@@ -1,162 +1,278 @@
 "use client";
 
-import React, { useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 
-const mockMessages = [
-  {
-    id: "1",
-    type: "EMAIL",
-    subject: "Sunday Service Reminder",
-    audience: "All Members",
-    status: "Sent",
-    sentAt: "2026-10-10T08:00:00Z",
-    branchId: "branch1",
-    body: "Join us for Sunday worship at 10 AM with live worship and a new message from Pastor Jade.",
-  },
-  {
-    id: "2",
-    type: "SMS",
-    subject: "",
-    audience: "Youth Group",
-    status: "Sent",
-    sentAt: "2026-10-09T14:30:00Z",
-    branchId: "branch1",
-    body: "Drop by the youth hangout at 4 PM for pizza and games!",
-  },
-  {
-    id: "3",
-    type: "EMAIL",
-    subject: "Midweek Bible Study",
-    audience: "Leaders",
-    status: "Draft",
-    sentAt: null,
-    branchId: "branch2",
-    body: "Reminder: Leaders preview night is Wednesday at 7 PM. RSVP by Tuesday.",
-  },
-];
+type MessageRow = {
+  id: string;
+  type: string;
+  audience: string;
+  subject?: string | null;
+  body: string;
+  status: string;
+  sentAt?: string | null;
+  createdAt: string;
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError) return error.message;
+  return (error as { message?: string })?.message ?? fallback;
+}
 
 export default function CommunicationPage() {
   const { selectedBranchId } = useBranch();
-  const [messages] = useState(mockMessages);
+  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const filteredMessages = selectedBranchId
-    ? messages.filter((msg) => msg.branchId === selectedBranchId)
-    : messages;
-
-  const [messageType, setMessageType] = useState("EMAIL");
+  const [type, setType] = useState("EMAIL");
   const [audience, setAudience] = useState("All Members");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [savingDraft, setSavingDraft] = useState(false);
 
-  const handleSendMessage = () => {
-    alert(`Sending ${messageType} to ${audience} with subject "${subject}" and body "${body}"`);
-    // In a real app, this would call our /api/messages endpoint
-    // After sending, you would typically add to mockMessages or refetch
-    setSubject("");
-    setBody("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  const loadMessages = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    const query = selectedBranchId ? `?branchId=${encodeURIComponent(selectedBranchId)}` : "";
+    try {
+      const payload = await apiFetch<MessageRow[]>(`/api/admin/messages${query}`, { cache: "no-store" });
+      setMessages(payload);
+    } catch (err) {
+      setMessages([]);
+      setError(getErrorMessage(err, "Unable to load communication campaigns."));
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBranchId]);
+
+  useEffect(() => {
+    void loadMessages();
+  }, [loadMessages]);
+
+  const filtered = useMemo(
+    () => messages.filter((message) => (statusFilter === "all" ? true : message.status === statusFilter)),
+    [messages, statusFilter],
+  );
+
+  const activeMessage = useMemo(() => messages.find((message) => message.id === activeMessageId) ?? null, [activeMessageId, messages]);
+
+  const saveDraft = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!body.trim()) {
+      setError("Message body is required.");
+      return;
+    }
+
+    if (type === "EMAIL" && !subject.trim()) {
+      setError("Subject is required for email campaigns.");
+      return;
+    }
+
+    setSavingDraft(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const created = await apiFetch<MessageRow>("/api/admin/messages", {
+        method: "POST",
+        ...withJsonBody({
+          type,
+          audience: audience.trim() || "All Members",
+          subject: type === "EMAIL" ? subject.trim() : undefined,
+          body: body.trim(),
+          branchId: selectedBranchId,
+        }),
+      });
+      setNotice("Campaign saved as draft.");
+      setSubject("");
+      setBody("");
+      setActiveMessageId(created.id);
+      await loadMessages();
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to save draft."));
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const sendCampaign = async (messageId: string) => {
+    setSendingId(messageId);
+    setError("");
+    setNotice("");
+    const query = selectedBranchId ? `?branchId=${encodeURIComponent(selectedBranchId)}` : "";
+
+    try {
+      await apiFetch(`/api/admin/messages/${messageId}/send${query}`, { method: "PUT" });
+      setNotice("Campaign sent.");
+      await loadMessages();
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to send campaign."));
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  const updateStatus = async (messageId: string, nextStatus: string) => {
+    const query = selectedBranchId ? `?branchId=${encodeURIComponent(selectedBranchId)}` : "";
+    setError("");
+    setNotice("");
+
+    try {
+      await apiFetch(`/api/admin/messages/${messageId}/status${query}`, {
+        method: "PUT",
+        ...withJsonBody({ status: nextStatus }),
+      });
+      setNotice(`Campaign status updated to ${nextStatus}.`);
+      await loadMessages();
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to update campaign status."));
+    }
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Communication Center</h2>
+      <section className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-900 to-violet-700 p-6 text-white shadow-lg shadow-indigo-900/20">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-200">Communication Center</p>
+        <h2 className="mt-2 text-2xl font-black">Draft and deliver campaigns with real delivery statuses.</h2>
+        <p className="mt-2 max-w-3xl text-sm text-indigo-100">Use audience presets and dispatch controls to keep engagement operations predictable.</p>
+      </section>
 
-      {/* New Message Form */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-semibold mb-4">Create New Message</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Message Type</label>
-            <select
-              value={messageType}
-              onChange={(e) => setMessageType(e.target.value)}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            >
-              <option value="EMAIL">Email</option>
-              <option value="SMS">SMS</option>
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
+        <form onSubmit={saveDraft} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-black text-slate-900">Create Campaign</h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">Campaigns start as Draft and can be sent immediately after review.</p>
+          <div className="mt-4 grid gap-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <select value={type} onChange={(event) => setType(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="EMAIL">Email</option>
+                <option value="SMS">SMS</option>
+              </select>
+              <select value={audience} onChange={(event) => setAudience(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="All Members">All Members</option>
+                <option value="New Members">New Members</option>
+                <option value="Leaders">Leaders</option>
+                <option value="Volunteers">Volunteers</option>
+                <option value="Youth Ministry">Youth Ministry</option>
+              </select>
+            </div>
+            {type === "EMAIL" && (
+              <input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Email subject" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            )}
+            <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={5} placeholder="Message body" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <button type="submit" disabled={savingDraft} className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60">
+            {savingDraft ? "Saving..." : "Save Draft"}
+          </button>
+        </form>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-slate-900">Campaign Timeline</h3>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700">
+              <option value="all">All</option>
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Failed">Failed</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Audience</label>
-            <input
-              type="text"
-              value={audience}
-              onChange={(e) => setAudience(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="e.g., All Members, Youth Group, [tag1,tag2]"
-            />
-          </div>
-          {messageType === "EMAIL" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Subject</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Subject of your email"
-              />
+
+          {activeMessage ? (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-black text-slate-900">{activeMessage.subject || "SMS Campaign"}</p>
+              <p className="mt-1 text-xs text-slate-600">Audience: {activeMessage.audience}</p>
+              <p className="mt-1 text-xs text-slate-600">Status: {activeMessage.status}</p>
+              <p className="mt-1 text-xs text-slate-600">Created: {new Date(activeMessage.createdAt).toLocaleString()}</p>
+              <p className="mt-1 text-xs text-slate-600">Sent: {activeMessage.sentAt ? new Date(activeMessage.sentAt).toLocaleString() : "Not sent"}</p>
+              <p className="mt-3 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">{activeMessage.body}</p>
             </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">Select a campaign from the table to preview details.</p>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Body</label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={4}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="Your message content..."
-            />
-          </div>
-          <button
-            onClick={handleSendMessage}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full"
-          >
-            Send Message
-          </button>
-        </div>
+        </section>
       </div>
 
-      {/* Message History */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Message History</h3>
+      {(error || notice) && (
+        <div className={`rounded-xl border px-4 py-3 text-sm font-semibold ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+          {error || notice}
         </div>
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audience</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject/Body Preview</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent At</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredMessages.map((msg) => (
-              <tr key={msg.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {msg.type}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {msg.audience}
-                </td>
-                <td className="px-6 py-4 max-w-sm truncate text-sm text-gray-500">
-                  {msg.type === "EMAIL" ? msg.subject : msg.body.substring(0, 50) + "..."}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    {msg.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {msg.sentAt ? new Date(msg.sentAt).toLocaleString() : "N/A"}
-                </td>
+      )}
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <h3 className="text-sm font-black uppercase tracking-wider text-slate-600">Campaigns</h3>
+          <button type="button" onClick={() => void loadMessages()} className="text-xs font-bold text-indigo-600 hover:text-indigo-500">
+            Refresh
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Audience</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Subject</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-4"><div className="h-4 w-12 animate-pulse rounded bg-slate-200" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-28 animate-pulse rounded bg-slate-200" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-36 animate-pulse rounded bg-slate-200" /></td>
+                    <td className="px-4 py-4"><div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" /></td>
+                    <td className="px-4 py-4"><div className="ml-auto h-4 w-24 animate-pulse rounded bg-slate-200" /></td>
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500">
+                    No campaigns found for the selected status filter.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((message) => (
+                  <tr key={message.id}>
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-900">{message.type}</td>
+                    <td className="px-4 py-4 text-sm text-slate-700">{message.audience}</td>
+                    <td className="px-4 py-4 text-sm text-slate-700">{message.subject || `${message.body.slice(0, 28)}...`}</td>
+                    <td className="px-4 py-4 text-sm">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${message.status === "Sent" ? "bg-emerald-100 text-emerald-700" : message.status === "Failed" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                        {message.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider">
+                      <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => setActiveMessageId(message.id)} className="text-indigo-600 hover:text-indigo-500">View</button>
+                        {message.status !== "Sent" && (
+                          <button type="button" onClick={() => void sendCampaign(message.id)} disabled={sendingId === message.id} className="text-emerald-600 hover:text-emerald-500 disabled:opacity-50">
+                            {sendingId === message.id ? "Sending..." : "Send"}
+                          </button>
+                        )}
+                        {message.status !== "Failed" && (
+                          <button type="button" onClick={() => void updateStatus(message.id, "Failed")} className="text-red-600 hover:text-red-500">Fail</button>
+                        )}
+                        {message.status !== "Draft" && (
+                          <button type="button" onClick={() => void updateStatus(message.id, "Draft")} className="text-slate-600 hover:text-slate-500">Draft</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

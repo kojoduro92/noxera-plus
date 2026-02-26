@@ -12,14 +12,52 @@ export class AuthController {
       throw new UnauthorizedException('Token is required');
     }
 
-    const decodedToken = await this.authService.verifySession(token);
-    const isSuperAdmin = this.authService.isSuperAdmin(decodedToken.email);
-    
+    const session = await this.authService.resolveSession(token);
+
     return {
       message: 'Session valid',
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      isSuperAdmin,
+      uid: session.uid,
+      email: session.email,
+      isSuperAdmin: session.isSuperAdmin,
+      userId: session.userId,
+      tenantId: session.tenantId,
+      tenantName: session.tenantName,
+      roleId: session.roleId,
+      roleName: session.roleName,
+      permissions: session.permissions,
+      defaultBranchId: session.defaultBranchId,
+      userStatus: session.userStatus,
+      branchScopeMode: session.branchScopeMode,
+      allowedBranchIds: session.allowedBranchIds,
+      signInProvider: session.signInProvider,
+    };
+  }
+
+  @Post('impersonation/session')
+  async createImpersonationSession(@Body('token') token: string) {
+    if (!token) {
+      throw new UnauthorizedException('Token is required');
+    }
+
+    const { session, impersonation } = await this.authService.resolveImpersonationSession(token);
+
+    return {
+      message: 'Impersonation session valid',
+      uid: session.uid,
+      email: session.email,
+      isSuperAdmin: session.isSuperAdmin,
+      userId: session.userId,
+      tenantId: session.tenantId,
+      tenantName: session.tenantName,
+      roleId: session.roleId,
+      roleName: session.roleName,
+      permissions: session.permissions,
+      defaultBranchId: session.defaultBranchId,
+      userStatus: session.userStatus,
+      branchScopeMode: session.branchScopeMode,
+      allowedBranchIds: session.allowedBranchIds,
+      signInProvider: session.signInProvider,
+      impersonation,
     };
   }
 }

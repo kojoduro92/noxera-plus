@@ -1,41 +1,67 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 interface BranchContextType {
   selectedBranchId: string | undefined;
   setSelectedBranchId: (branchId: string | undefined) => void;
-  // Potentially add fetched branches data here too
+  setScope: (scopeKey: string, defaultBranchId?: string) => void;
 }
 
 const BranchContext = createContext<BranchContextType>({
   selectedBranchId: undefined,
   setSelectedBranchId: () => {},
+  setScope: () => {},
 });
 
 export const useBranch = () => useContext(BranchContext);
 
 export const BranchProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(undefined);
+  const [scopeKey, setScopeKey] = useState("global");
+  const getStorageKey = useCallback((key: string) => `selectedBranchId:${key}`, []);
 
-  // In a real app, you might try to load the last selected branch from local storage
-  // useEffect(() => {
-  //   const storedBranchId = localStorage.getItem("selectedBranchId");
-  //   if (storedBranchId) {
-  //     setSelectedBranchId(storedBranchId);
-  //   }
-  // }, []);
+  const setScope = useCallback(
+    (nextScopeKey: string, defaultBranchId?: string) => {
+      const normalizedScope = nextScopeKey.trim() || "global";
+      setScopeKey(normalizedScope);
+      if (typeof window === "undefined") {
+        setSelectedBranchId(defaultBranchId);
+        return;
+      }
 
-  // useEffect(() => {
-  //   if (selectedBranchId !== undefined) {
-  //     localStorage.setItem("selectedBranchId", selectedBranchId);
-  //   } else {
-  //     localStorage.removeItem("selectedBranchId");
-  //   }
-  // }, [selectedBranchId]);
+      const storedBranchId = window.localStorage.getItem(getStorageKey(normalizedScope));
+      if (storedBranchId) {
+        setSelectedBranchId(storedBranchId);
+      } else {
+        setSelectedBranchId(defaultBranchId);
+      }
+    },
+    [getStorageKey],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedBranchId = window.localStorage.getItem(getStorageKey(scopeKey));
+    if (storedBranchId) {
+      setSelectedBranchId(storedBranchId);
+    } else {
+      setSelectedBranchId(undefined);
+    }
+  }, [getStorageKey, scopeKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storageKey = getStorageKey(scopeKey);
+    if (selectedBranchId !== undefined) {
+      window.localStorage.setItem(storageKey, selectedBranchId);
+    } else {
+      window.localStorage.removeItem(storageKey);
+    }
+  }, [getStorageKey, scopeKey, selectedBranchId]);
 
   return (
-    <BranchContext.Provider value={{ selectedBranchId, setSelectedBranchId }}>
+    <BranchContext.Provider value={{ selectedBranchId, setSelectedBranchId, setScope }}>
       {children}
     </BranchContext.Provider>
   );

@@ -2,6 +2,7 @@
 
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { PaginatedResponse, SupportTicketRow } from "@/lib/super-admin-types";
+import { downloadRowsAsCsv } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -25,6 +26,8 @@ const initialCreateForm: CreateFormState = {
   priority: "Medium",
   assignedTo: "",
 };
+
+type SortOption = "updated" | "priority" | "status" | "subject";
 
 export default function SupportTicketsPage() {
   const searchParams = useSearchParams();
@@ -51,6 +54,8 @@ export default function SupportTicketsPage() {
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("updated");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     setDraftStatus(status);
@@ -166,6 +171,28 @@ export default function SupportTicketsPage() {
   };
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.limit));
+  const sortedItems = useMemo(() => {
+    const next = [...data.items];
+    const direction = sortDirection === "asc" ? 1 : -1;
+    next.sort((a, b) => {
+      if (sortBy === "updated") return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * direction;
+      if (sortBy === "priority") return a.priority.localeCompare(b.priority) * direction;
+      if (sortBy === "status") return a.status.localeCompare(b.status) * direction;
+      return a.subject.localeCompare(b.subject) * direction;
+    });
+    return next;
+  }, [data.items, sortBy, sortDirection]);
+
+  const exportRows = () => {
+    downloadRowsAsCsv("super-admin-support-tickets.csv", sortedItems, [
+      { label: "Subject", value: (row) => row.subject },
+      { label: "Tenant", value: (row) => row.tenant?.name ?? row.tenantId },
+      { label: "Status", value: (row) => row.status },
+      { label: "Priority", value: (row) => row.priority },
+      { label: "Assigned To", value: (row) => row.assignedTo ?? "" },
+      { label: "Updated", value: (row) => new Date(row.updatedAt).toLocaleString() },
+    ]);
+  };
 
   return (
     <div className="space-y-6">
@@ -221,7 +248,7 @@ export default function SupportTicketsPage() {
       </form>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-6">
           <input
             value={draftSearch}
             onChange={(event) => setDraftSearch(event.target.value)}
@@ -259,6 +286,33 @@ export default function SupportTicketsPage() {
           >
             Apply Filters
           </button>
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as SortOption)}
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="updated">Sort: Updated</option>
+            <option value="priority">Sort: Priority</option>
+            <option value="status">Sort: Status</option>
+            <option value="subject">Sort: Subject</option>
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={sortDirection}
+              onChange={(event) => setSortDirection(event.target.value as "asc" | "desc")}
+              className="rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+            <button
+              type="button"
+              onClick={exportRows}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
+            >
+              CSV
+            </button>
+          </div>
         </div>
       </div>
 
@@ -309,14 +363,14 @@ export default function SupportTicketsPage() {
                     </td>
                   </tr>
                 ))
-              ) : data.items.length === 0 ? (
+              ) : sortedItems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-12 text-center text-sm text-slate-500">
                     No support tickets found.
                   </td>
                 </tr>
               ) : (
-                data.items.map((ticket) => (
+                sortedItems.map((ticket) => (
                   <tr key={ticket.id}>
                     <td className="px-5 py-4">
                       <p className="text-sm font-semibold text-slate-900">{ticket.subject}</p>

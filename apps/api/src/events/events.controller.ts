@@ -1,34 +1,48 @@
-import { Controller, Get, Post, Body, Param, Headers, UnauthorizedException, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { EventsService } from './events.service';
+import { AdminGuard } from '../auth/admin.guard';
+import type { RequestWithAuth } from '../auth/auth.types';
+import { resolveReadBranchScope, resolveWriteBranchScope } from '../auth/branch-scope';
 
+@UseGuards(AdminGuard)
 @Controller("events")
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
-  private getTenantId(headers: any) {
-    const tenantId = headers["x-tenant-id"];
-    if (!tenantId) throw new UnauthorizedException("Missing x-tenant-id header");
-    return tenantId;
-  }
-
   @Post()
   async createEvent(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Body() body: { title: string; description?: string; startDate: string; endDate: string; location?: string; branchId?: string },
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.eventsService.createEvent(tenantId, body);
+    const session = request.authContext!;
+    const scope = resolveWriteBranchScope(session, body.branchId);
+    return this.eventsService.createEvent(
+      session.tenantId!,
+      { ...body, branchId: scope.branchId },
+      session.branchScopeMode === 'RESTRICTED' ? session.allowedBranchIds : undefined,
+    );
   }
 
   @Get()
-  async getEvents(@Headers() headers: any, @Query("branchId") branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.eventsService.getEvents(tenantId, branchId);
+  async getEvents(@Req() request: RequestWithAuth, @Query("branchId") branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.eventsService.getEvents(
+      session.tenantId!,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Get(":id")
-  async getEventById(@Headers() headers: any, @Param("id") id: string, @Query("branchId") branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.eventsService.getEventById(tenantId, id, branchId);
+  async getEventById(@Req() request: RequestWithAuth, @Param("id") id: string, @Query("branchId") branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.eventsService.getEventById(
+      session.tenantId!,
+      id,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 }

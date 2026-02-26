@@ -1,38 +1,35 @@
-import { Controller, Get, Post, Put, Body, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { WebsiteService } from './website.service';
+import { AdminGuard } from '../auth/admin.guard';
+import type { RequestWithAuth } from '../auth/auth.types';
 
+@UseGuards(AdminGuard)
 @Controller('website')
 export class WebsiteController {
   constructor(private readonly websiteService: WebsiteService) {}
 
-  private getTenantId(headers: any) {
-    const tenantId = headers['x-tenant-id'];
-    if (!tenantId) throw new UnauthorizedException('Missing x-tenant-id header');
-    return tenantId;
-  }
-
   @Get()
-  async getWebsite(@Headers() headers: any) {
-    return this.websiteService.getWebsite(this.getTenantId(headers));
+  async getWebsite(@Req() request: RequestWithAuth) {
+    return this.websiteService.getWebsite(request.authContext!.tenantId!);
   }
 
   @Put('theme')
-  async updateTheme(@Headers() headers: any, @Body() themeConfig: any) {
-    return this.websiteService.updateTheme(this.getTenantId(headers), themeConfig);
+  async updateTheme(@Req() request: RequestWithAuth, @Body() themeConfig: any) {
+    return this.websiteService.updateTheme(request.authContext!.tenantId!, themeConfig);
   }
 
   @Post('pages')
-  async createPage(@Headers() headers: any, @Body() data: { slug: string; title: string }) {
-    return this.websiteService.createPage(this.getTenantId(headers), data);
+  async createPage(@Req() request: RequestWithAuth, @Body() data: { slug: string; title: string }) {
+    return this.websiteService.createPage(request.authContext!.tenantId!, data);
   }
 
   @Put('pages/:id')
-  async updatePage(@Headers() headers: any, @Param('id') id: string, @Body() data: { title?: string; isPublished?: boolean }) {
-    return this.websiteService.updatePage(id, data);
+  async updatePage(@Req() request: RequestWithAuth, @Param('id') id: string, @Body() data: { title?: string; isPublished?: boolean }) {
+    return this.websiteService.updatePage(request.authContext!.tenantId!, id, data);
   }
 
   @Post('pages/:id/sections')
-  async addSection(@Headers() headers: any, @Param('id') id: string, @Body() data: { type: string; content: any; order: number }) {
-    return this.websiteService.addSection(id, data);
+  async addSection(@Req() request: RequestWithAuth, @Param('id') id: string, @Body() data: { type: string; content: any; order: number }) {
+    return this.websiteService.addSection(request.authContext!.tenantId!, id, data);
   }
 }

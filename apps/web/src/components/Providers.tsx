@@ -2,11 +2,14 @@
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { BranchProvider } from "@/contexts/BranchContext";
+import { PlatformPersonalizationProvider } from "@/contexts/PlatformPersonalizationContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <BranchProvider>{children}</BranchProvider>
-    </AuthProvider>
+    <PlatformPersonalizationProvider>
+      <AuthProvider>
+        <BranchProvider>{children}</BranchProvider>
+      </AuthProvider>
+    </PlatformPersonalizationProvider>
   );
 }

@@ -1,40 +1,60 @@
-import { Controller, Post, Get, Body, Param, Headers, UnauthorizedException, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
+import { AdminGuard } from '../auth/admin.guard';
+import type { RequestWithAuth } from '../auth/auth.types';
+import { resolveReadBranchScope, resolveWriteBranchScope } from '../auth/branch-scope';
 
+@UseGuards(AdminGuard)
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  private getTenantId(headers: any) {
-    const tenantId = headers['x-tenant-id'];
-    if (!tenantId) throw new UnauthorizedException('Missing x-tenant-id header');
-    return tenantId;
-  }
-
   @Post()
   async createAttendanceRecord(
-    @Headers() headers: any,
+    @Req() request: RequestWithAuth,
     @Body() body: { serviceId: string; memberId?: string; visitorId?: string; method?: string; branchId?: string },
   ) {
-    const tenantId = this.getTenantId(headers);
-    return this.attendanceService.createAttendanceRecord(tenantId, body);
+    const session = request.authContext!;
+    const scope = resolveWriteBranchScope(session, body.branchId);
+    return this.attendanceService.createAttendanceRecord(
+      session.tenantId!,
+      { ...body, branchId: scope.branchId },
+      session.branchScopeMode === 'RESTRICTED' ? session.allowedBranchIds : undefined,
+    );
   }
 
   @Get()
-  async getAttendanceRecords(@Headers() headers: any, @Query('branchId') branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.attendanceService.getAttendanceRecords(tenantId, branchId);
-  }
-
-  @Get(':id')
-  async getAttendanceRecordById(@Headers() headers: any, @Param('id') id: string, @Query('branchId') branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.attendanceService.getAttendanceRecordById(id, tenantId, branchId);
+  async getAttendanceRecords(@Req() request: RequestWithAuth, @Query('branchId') branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.attendanceService.getAttendanceRecords(
+      session.tenantId!,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 
   @Get('service/:serviceId')
-  async getAttendanceByService(@Headers() headers: any, @Param('serviceId') serviceId: string, @Query('branchId') branchId?: string) {
-    const tenantId = this.getTenantId(headers);
-    return this.attendanceService.getAttendanceByService(serviceId, tenantId, branchId);
+  async getAttendanceByService(@Req() request: RequestWithAuth, @Param('serviceId') serviceId: string, @Query('branchId') branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.attendanceService.getAttendanceByService(
+      serviceId,
+      session.tenantId!,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
+  }
+
+  @Get(':id')
+  async getAttendanceRecordById(@Req() request: RequestWithAuth, @Param('id') id: string, @Query('branchId') branchId?: string) {
+    const session = request.authContext!;
+    const scope = resolveReadBranchScope(session, branchId);
+    return this.attendanceService.getAttendanceRecordById(
+      id,
+      session.tenantId!,
+      scope.branchId,
+      session.branchScopeMode === 'RESTRICTED' ? (scope.allowedBranchIds ?? session.allowedBranchIds) : undefined,
+    );
   }
 }

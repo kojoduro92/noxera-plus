@@ -5,7 +5,25 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
-  async createService(tenantId: string, data: { name: string; date: string; branchId?: string }) {
+  private async assertBranchInTenant(tenantId: string, branchId?: string) {
+    if (!branchId) return;
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, tenantId },
+      select: { id: true },
+    });
+    if (!branch) throw new NotFoundException('Branch not found for this tenant');
+  }
+
+  private assertAllowedBranchAccess(allowedBranchIds: string[] | undefined, branchId?: string) {
+    if (!allowedBranchIds || !branchId) return;
+    if (!allowedBranchIds.includes(branchId)) {
+      throw new NotFoundException('Branch not found for this account scope');
+    }
+  }
+
+  async createService(tenantId: string, data: { name: string; date: string; branchId?: string }, allowedBranchIds?: string[]) {
+    this.assertAllowedBranchAccess(allowedBranchIds, data.branchId);
+    await this.assertBranchInTenant(tenantId, data.branchId);
     return this.prisma.service.create({
       data: {
         tenantId,
@@ -16,10 +34,14 @@ export class ServicesService {
     });
   }
 
-  async getServices(tenantId: string, branchId?: string) {
+  async getServices(tenantId: string, branchId?: string, allowedBranchIds?: string[]) {
+    this.assertAllowedBranchAccess(allowedBranchIds, branchId);
+    await this.assertBranchInTenant(tenantId, branchId);
     const where: any = { tenantId };
     if (branchId) {
       where.branchId = branchId;
+    } else if (allowedBranchIds && allowedBranchIds.length > 0) {
+      where.branchId = { in: allowedBranchIds };
     }
     return this.prisma.service.findMany({
       where,
@@ -27,10 +49,14 @@ export class ServicesService {
     });
   }
 
-  async getServiceById(id: string, tenantId: string, branchId?: string) {
+  async getServiceById(id: string, tenantId: string, branchId?: string, allowedBranchIds?: string[]) {
+    this.assertAllowedBranchAccess(allowedBranchIds, branchId);
+    await this.assertBranchInTenant(tenantId, branchId);
     const where: any = { id, tenantId };
     if (branchId) {
       where.branchId = branchId;
+    } else if (allowedBranchIds && allowedBranchIds.length > 0) {
+      where.branchId = { in: allowedBranchIds };
     }
     const service = await this.prisma.service.findFirst({
       where,

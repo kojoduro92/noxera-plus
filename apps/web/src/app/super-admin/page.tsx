@@ -1,32 +1,110 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import Link from "next/link";
+import { DonutChart, HorizontalBarChart, LineTrendChart, Sparkline, type Segment, type SeriesPoint } from "@/components/super-admin/charts";
+import { COUNTRY_OPTIONS, formatMoney, optionLabel } from "@/lib/platform-options";
+import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
 
 type PlatformMetrics = {
+  churches: number;
+  branches: number;
+  users: number;
+  activeUsers: number;
+  invitedUsers: number;
+  suspendedUsers: number;
+  roles: number;
+  customRoles: number;
+};
+
+type TenantRow = {
+  id: string;
+  name: string;
+  domain?: string | null;
+  status: string;
+  createdAt: string;
+  plan?: {
+    name?: string | null;
+    price?: number | null;
+  } | null;
+  country?: string | null;
+  currency?: string | null;
+};
+
+type PlatformFinancialMetrics = {
   totalChurches: number;
   activeChurches: number;
   mrr: number;
 };
 
+function monthLabel(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "short" });
+}
+
+function getMonthSeries(tenants: TenantRow[], months = 8): SeriesPoint[] {
+  const now = new Date();
+  const points: SeriesPoint[] = [];
+
+  for (let index = months - 1; index >= 0; index -= 1) {
+    const bucketDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - index, 1));
+    const nextBucketDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - index + 1, 1));
+
+    const value = tenants.filter((tenant) => {
+      const createdAt = new Date(tenant.createdAt);
+      return createdAt >= bucketDate && createdAt < nextBucketDate;
+    }).length;
+
+    points.push({
+      label: monthLabel(bucketDate),
+      value,
+    });
+  }
+
+  return points;
+}
+
+function toSegments(source: Record<string, number>, palette: string[]): Segment[] {
+  return Object.entries(source)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value], index) => ({
+      label,
+      value,
+      color: palette[index % palette.length],
+    }));
+}
+
+function totalValue(points: SeriesPoint[]) {
+  return points.reduce((sum, point) => sum + point.value, 0);
+}
+
 export default function SuperAdminDashboard() {
+  const { personalization } = usePlatformPersonalization();
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
+  const [financial, setFinancial] = useState<PlatformFinancialMetrics | null>(null);
+  const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchMetrics = async () => {
+  const fetchDashboard = async () => {
     setLoading(true);
     setError("");
 
     try {
-      const data = await apiFetch<PlatformMetrics>("/api/super-admin/tenants/platform/metrics");
-      setMetrics(data);
+      const [overviewData, financialData, tenantsData] = await Promise.all([
+        apiFetch<PlatformMetrics>("/api/super-admin/platform/overview"),
+        apiFetch<PlatformFinancialMetrics>("/api/super-admin/tenants/platform/metrics"),
+        apiFetch<TenantRow[]>("/api/super-admin/tenants"),
+      ]);
+
+      setMetrics(overviewData);
+      setFinancial(financialData);
+      setTenants(tenantsData);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Your session expired. Please sign in again.");
       } else {
-        setError((err as { message?: string })?.message ?? "Unable to load platform metrics.");
+        setError((err as { message?: string })?.message ?? "Unable to load dashboard metrics.");
       }
     } finally {
       setLoading(false);
@@ -34,29 +112,90 @@ export default function SuperAdminDashboard() {
   };
 
   useEffect(() => {
-    void fetchMetrics();
+    void fetchDashboard();
   }, []);
 
-  const totalChurches = metrics?.totalChurches ?? 0;
-  const activeChurches = metrics?.activeChurches ?? 0;
-  const conversionRate = totalChurches > 0 ? ((activeChurches / totalChurches) * 100).toFixed(1) : "0.0";
+  const signupSeries = useMemo(() => getMonthSeries(tenants, 8), [tenants]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-full">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-    </div>
-  );
+  const statusSegments = useMemo(() => {
+    const counts = tenants.reduce<Record<string, number>>((acc, tenant) => {
+      const key = tenant.status || "Unknown";
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return toSegments(counts, ["#4f46e5", "#22c55e", "#f59e0b", "#ef4444", "#0ea5e9"]);
+  }, [tenants]);
+
+  const planSegments = useMemo(() => {
+    const counts = tenants.reduce<Record<string, number>>((acc, tenant) => {
+      const key = tenant.plan?.name || "Trial";
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return toSegments(counts, ["#6366f1", "#8b5cf6", "#ec4899", "#f97316"]);
+  }, [tenants]);
+
+  const countrySegments = useMemo(() => {
+    const counts = tenants.reduce<Record<string, number>>((acc, tenant) => {
+      const key = optionLabel(COUNTRY_OPTIONS, tenant.country ?? "", "Unknown");
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return toSegments(counts, ["#0ea5e9", "#22c55e", "#f59e0b", "#a855f7", "#e11d48", "#14b8a6"]);
+  }, [tenants]);
+
+  const activeMrrByPlan = useMemo(() => {
+    const counts = tenants.reduce<Record<string, number>>((acc, tenant) => {
+      if (tenant.status !== "Active") {
+        return acc;
+      }
+
+      const key = tenant.plan?.name || "Trial";
+      const price = tenant.plan?.price ?? 0;
+      acc[key] = (acc[key] ?? 0) + price;
+      return acc;
+    }, {});
+
+    return toSegments(counts, ["#4338ca", "#4f46e5", "#7c3aed", "#2563eb"]);
+  }, [tenants]);
+
+  const kpiSparkline = useMemo(() => {
+    const growth = signupSeries.reduce<number[]>((acc, point) => {
+      const next = (acc[acc.length - 1] ?? 0) + point.value;
+      acc.push(next);
+      return acc;
+    }, []);
+
+    return growth.map((value, index) => ({ label: signupSeries[index]?.label ?? `${index + 1}`, value }));
+  }, [signupSeries]);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Platform Dashboard</h2>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Platform Overview</p>
+        <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Super Admin Command Center</h2>
+        <p className="mt-2 text-sm font-semibold text-slate-500">
+          Multi-tenant operations, growth metrics, and health signals in one cockpit.
+        </p>
+      </section>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 space-y-3">
+        <div className="space-y-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           <p>{error}</p>
           <button
             type="button"
-            onClick={() => void fetchMetrics()}
+            onClick={() => void fetchDashboard()}
             className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
           >
             Retry
@@ -64,57 +203,67 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider">Total Churches</h3>
-            <span className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-            </span>
-          </div>
-          <p className="text-4xl font-black mt-4 text-gray-900">{totalChurches}</p>
-          <p className="text-xs text-green-500 font-bold mt-2">+2 this week</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider">Active Subscriptions</h3>
-            <span className="p-2 bg-green-50 rounded-lg text-green-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </span>
-          </div>
-          <p className="text-4xl font-black mt-4 text-gray-900">{activeChurches}</p>
-          <p className="text-xs text-gray-400 font-medium mt-2">{conversionRate}% conversion rate</p>
-        </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Churches</p>
+          <p className="mt-3 text-4xl font-black text-slate-900">{metrics?.churches ?? 0}</p>
+          <p className="mt-2 text-xs font-semibold text-slate-500">{metrics?.branches ?? 0} active branches</p>
+        </article>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider">Monthly Revenue</h3>
-            <span className="p-2 bg-yellow-50 rounded-lg text-yellow-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </span>
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Platform Users</p>
+          <p className="mt-3 text-4xl font-black text-slate-900">{metrics?.users ?? 0}</p>
+          <p className="mt-2 text-xs font-semibold text-slate-500">{metrics?.activeUsers ?? 0} active users</p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Monthly Recurring Revenue</p>
+          <p className="mt-3 text-4xl font-black text-slate-900">{formatMoney(financial?.mrr ?? 0, personalization.defaultCurrency, personalization.defaultLocale)}</p>
+          <p className="mt-2 text-xs font-semibold text-slate-500">{financial?.activeChurches ?? 0} active subscriptions</p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Church Growth Pulse</p>
+          <p className="mt-3 text-4xl font-black text-slate-900">{totalValue(signupSeries)}</p>
+          <div className="mt-3 text-indigo-600">
+            <Sparkline points={kpiSparkline} className="h-10 w-full" />
           </div>
-          <p className="text-4xl font-black mt-4 text-gray-900">${metrics?.mrr ?? 0}</p>
-          <p className="text-xs text-indigo-500 font-bold mt-2">Target: $5,000</p>
-        </div>
+        </article>
       </div>
 
-      <div className="bg-indigo-900 rounded-2xl p-8 text-white relative overflow-hidden">
-        <div className="relative z-10">
-          <h3 className="text-2xl font-bold mb-2">Grow your platform!</h3>
-          <p className="text-indigo-200 max-w-lg mb-6 text-sm leading-relaxed">
-            Monitor system health and church activity in real-time. Use the Audit Log to track every administrative action.
-          </p>
-          <Link
-            href="/super-admin/analytics"
-            className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold shadow-xl transition-colors hover:bg-indigo-50 !text-indigo-900"
-          >
-            View Analytics Report
-            <span aria-hidden>→</span>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <LineTrendChart title="Church Signups (Last 8 Months)" points={signupSeries} />
+        </div>
+        <DonutChart title="Tenant Status Distribution" segments={statusSegments} centerLabel={`${tenants.length}`} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <HorizontalBarChart title="Plan Adoption" segments={planSegments} />
+        <HorizontalBarChart title="MRR by Plan" segments={activeMrrByPlan} />
+        <HorizontalBarChart title="Top Countries" segments={countrySegments} />
+      </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-indigo-900 to-indigo-700 p-7 text-white shadow-sm">
+        <h3 className="text-2xl font-black">Platform execution quick actions</h3>
+        <p className="mt-2 max-w-3xl text-sm text-indigo-100">
+          Open operational modules directly and keep rollout, governance, and system stability moving in one flow.
+        </p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Link href="/super-admin/analytics" className="rounded-xl border border-indigo-200/30 bg-white/10 p-4 text-sm font-black transition hover:bg-white/20">
+            Analytics
+          </Link>
+          <Link href="/super-admin/feature-flags" className="rounded-xl border border-indigo-200/30 bg-white/10 p-4 text-sm font-black transition hover:bg-white/20">
+            Feature Flags
+          </Link>
+          <Link href="/super-admin/content" className="rounded-xl border border-indigo-200/30 bg-white/10 p-4 text-sm font-black transition hover:bg-white/20">
+            Content Hub
+          </Link>
+          <Link href="/super-admin/system" className="rounded-xl border border-indigo-200/30 bg-white/10 p-4 text-sm font-black transition hover:bg-white/20">
+            System Controls
           </Link>
         </div>
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-20"></div>
-      </div>
+      </section>
     </div>
   );
 }

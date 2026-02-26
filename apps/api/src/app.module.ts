@@ -16,9 +16,27 @@ import { BranchesModule } from './branches/branches.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { WebsiteModule } from './website/website.module';
 import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, TenantsModule, MembersModule, ServicesModule, AttendanceModule, GivingModule, GroupsModule, EventsModule, FollowupsModule, MessagesModule, BranchesModule, IntegrationsModule, WebsiteModule, AdminModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    TenantsModule,
+    MembersModule,
+    ServicesModule,
+    AttendanceModule,
+    GivingModule,
+    GroupsModule,
+    EventsModule,
+    FollowupsModule,
+    MessagesModule,
+    BranchesModule,
+    IntegrationsModule,
+    WebsiteModule,
+    ReportsModule,
+    AdminModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

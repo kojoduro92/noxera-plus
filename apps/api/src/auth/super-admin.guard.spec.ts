@@ -3,9 +3,8 @@ import { SuperAdminGuard } from './super-admin.guard';
 import { AuthService } from './auth.service';
 
 describe('SuperAdminGuard', () => {
-  const authService: Pick<AuthService, 'verifySession' | 'isSuperAdmin'> = {
-    verifySession: jest.fn(),
-    isSuperAdmin: jest.fn(),
+  const authService: Pick<AuthService, 'resolveSession'> = {
+    resolveSession: jest.fn(),
   };
   const guard = new SuperAdminGuard(authService as AuthService);
 
@@ -26,8 +25,7 @@ describe('SuperAdminGuard', () => {
   });
 
   it('denies non-super-admin users', async () => {
-    (authService.verifySession as jest.Mock).mockResolvedValue({ uid: 'uid-1', email: 'user@noxera.plus' });
-    (authService.isSuperAdmin as jest.Mock).mockReturnValue(false);
+    (authService.resolveSession as jest.Mock).mockResolvedValue({ uid: 'uid-1', email: 'user@noxera.plus', isSuperAdmin: false });
 
     await expect(
       guard.canActivate(createExecutionContext({ headers: { authorization: 'Bearer token' } })),
@@ -35,8 +33,7 @@ describe('SuperAdminGuard', () => {
   });
 
   it('attaches super admin context when allowed', async () => {
-    (authService.verifySession as jest.Mock).mockResolvedValue({ uid: 'uid-1', email: 'admin@noxera.plus' });
-    (authService.isSuperAdmin as jest.Mock).mockReturnValue(true);
+    (authService.resolveSession as jest.Mock).mockResolvedValue({ uid: 'uid-1', email: 'admin@noxera.plus', isSuperAdmin: true });
 
     const request: Record<string, unknown> = {
       headers: { authorization: 'Bearer valid' },
