@@ -9,6 +9,7 @@ import { useBranch } from "@/contexts/BranchContext";
 import { ConsoleNavItem, ConsoleProfileAction, ConsoleShell } from "@/components/console/console-shell";
 import { PortalLink } from "@/components/console/portal-switcher";
 import { TenantBranchToolbar } from "@/components/console/tenant-branch-toolbar";
+import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
 
 const navItems: ConsoleNavItem[] = [
   {
@@ -26,6 +27,33 @@ const navItems: ConsoleNavItem[] = [
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5V4H2v16h5m10 0v-6a3 3 0 10-6 0v6m6 0H7" />
+      </svg>
+    ),
+  },
+  {
+    name: "Visitors",
+    href: "/admin/visitors",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5V4H2v16h5m0 0v-3a3 3 0 013-3h4a3 3 0 013 3v3m-8-9a3 3 0 106 0 3 3 0 00-6 0z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Tags",
+    href: "/admin/tags",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5l9 9a2.828 2.828 0 01-4 4l-9-9V3z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Follow-ups",
+    href: "/admin/followups",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5 2a8 8 0 11-16 0 8 8 0 0116 0z" />
       </svg>
     ),
   },
@@ -66,6 +94,42 @@ const navItems: ConsoleNavItem[] = [
     ),
   },
   {
+    name: "Pledges",
+    href: "/admin/giving/pledges",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1m0-1c-2.761 0-5-2.239-5-5V9a5 5 0 0110 0v2c0 2.761-2.239 5-5 5z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Funds",
+    href: "/admin/giving/funds",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+    ),
+  },
+  {
+    name: "Budgets",
+    href: "/admin/giving/budgets",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3v18h18M7 14l3-3 3 2 5-5" />
+      </svg>
+    ),
+  },
+  {
+    name: "Statements",
+    href: "/admin/giving/statements",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
+  {
     name: "Communication",
     href: "/admin/communication",
     icon: (
@@ -80,6 +144,15 @@ const navItems: ConsoleNavItem[] = [
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
+      </svg>
+    ),
+  },
+  {
+    name: "Integrations",
+    href: "/admin/integrations",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h8m-8 10h8M7 8a2 2 0 110-4 2 2 0 010 4zm0 14a2 2 0 110-4 2 2 0 010 4zm10-7a2 2 0 110-4 2 2 0 010 4z" />
       </svg>
     ),
   },
@@ -155,15 +228,47 @@ const portalLinks: PortalLink[] = [
   },
 ];
 
+function normalizeHexColor(value: string | undefined, fallback: string) {
+  const candidate = (value ?? "").trim();
+  if (!candidate) return fallback;
+  const normalized = candidate.startsWith("#") ? candidate.slice(1) : candidate;
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return fallback;
+  return `#${normalized.toLowerCase()}`;
+}
+
+function blendHexColors(base: string, overlay: string, weight: number) {
+  const clamp = Math.min(1, Math.max(0, weight));
+  const a = base.replace("#", "");
+  const b = overlay.replace("#", "");
+  const ar = Number.parseInt(a.slice(0, 2), 16);
+  const ag = Number.parseInt(a.slice(2, 4), 16);
+  const ab = Number.parseInt(a.slice(4, 6), 16);
+  const br = Number.parseInt(b.slice(0, 2), 16);
+  const bg = Number.parseInt(b.slice(2, 4), 16);
+  const bb = Number.parseInt(b.slice(4, 6), 16);
+  const rr = Math.round(ar * (1 - clamp) + br * clamp);
+  const rg = Math.round(ag * (1 - clamp) + bg * clamp);
+  const rb = Math.round(ab * (1 - clamp) + bb * clamp);
+  return `#${rr.toString(16).padStart(2, "0")}${rg.toString(16).padStart(2, "0")}${rb.toString(16).padStart(2, "0")}`;
+}
+
 function getPageTitle(pathname: string): string {
   if (pathname === "/admin") return "Church Operations Dashboard";
   if (pathname.startsWith("/admin/members")) return "Members Directory";
+  if (pathname.startsWith("/admin/visitors")) return "Visitors";
+  if (pathname.startsWith("/admin/tags")) return "Tags";
+  if (pathname.startsWith("/admin/followups")) return "Follow-ups";
   if (pathname.startsWith("/admin/services")) return "Services & Attendance";
   if (pathname.startsWith("/admin/groups")) return "Groups & Ministries";
   if (pathname.startsWith("/admin/events")) return "Events & Programs";
+  if (pathname.startsWith("/admin/giving/pledges")) return "Pledges";
+  if (pathname.startsWith("/admin/giving/funds")) return "Funds";
+  if (pathname.startsWith("/admin/giving/budgets")) return "Budgets";
+  if (pathname.startsWith("/admin/giving/statements")) return "Statements";
   if (pathname.startsWith("/admin/giving")) return "Giving & Finance";
   if (pathname.startsWith("/admin/communication")) return "Communication Center";
   if (pathname.startsWith("/admin/website")) return "Website Builder";
+  if (pathname.startsWith("/admin/integrations")) return "Integrations";
   if (pathname.startsWith("/admin/reports")) return "Reports";
   if (pathname.startsWith("/admin/notifications")) return "Notifications";
   if (pathname.startsWith("/admin/settings")) return "Settings";
@@ -174,8 +279,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const { personalization } = usePlatformPersonalization();
   const { setScope } = useBranch();
   const pageTitle = useMemo(() => getPageTitle(pathname), [pathname]);
+  const brandAccentMuted = useMemo(() => {
+    const accentColor = normalizeHexColor(personalization.brandAccentColor, "#06b6d4");
+    return blendHexColors(accentColor, "#e2e8f0", 0.62);
+  }, [personalization.brandAccentColor]);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState("");
   const [notificationCount, setNotificationCount] = useState(0);
@@ -311,6 +421,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const quickAction =
     pathname.startsWith("/admin/members")
       ? { label: "Add Member", href: "/admin/members/new" }
+      : pathname.startsWith("/admin/visitors")
+        ? { label: "Add Visitor", href: "/admin/members/new?status=Visitor" }
+        : pathname.startsWith("/admin/tags")
+          ? { label: "Manage Tags", href: "/admin/tags" }
+      : pathname.startsWith("/admin/followups")
+        ? { label: "New Follow-up", href: "/admin/followups" }
       : pathname.startsWith("/admin/services")
         ? { label: "Schedule Service", href: "/admin/services" }
         : pathname.startsWith("/admin/events")
@@ -368,7 +484,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         titlePrefix="Church Operations"
         brandName={
           <>
-            NOXERA <span className="text-indigo-400">PLUS</span>
+            {personalization.orgName.split(" ")[0]?.toUpperCase() ?? "NOXERA"}{" "}
+            <span style={{ color: brandAccentMuted }}>
+              {personalization.orgName.split(" ").slice(1).join(" ").toUpperCase() || "PLUS"}
+            </span>
           </>
         }
         searchPlaceholder="Search members, services, attendance, or reports"
@@ -402,7 +521,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         titlePrefix="Church Operations"
         brandName={
           <>
-            NOXERA <span className="text-indigo-400">PLUS</span>
+            {personalization.orgName.split(" ")[0]?.toUpperCase() ?? "NOXERA"}{" "}
+            <span style={{ color: brandAccentMuted }}>
+              {personalization.orgName.split(" ").slice(1).join(" ").toUpperCase() || "PLUS"}
+            </span>
           </>
         }
         searchPlaceholder="Search members, services, attendance, or reports"
@@ -440,7 +562,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       titlePrefix="Church Operations"
       brandName={
         <>
-          NOXERA <span className="text-indigo-400">PLUS</span>
+          {personalization.orgName.split(" ")[0]?.toUpperCase() ?? "NOXERA"}{" "}
+          <span style={{ color: brandAccentMuted }}>
+            {personalization.orgName.split(" ").slice(1).join(" ").toUpperCase() || "PLUS"}
+          </span>
         </>
       }
       searchPlaceholder="Search members, services, attendance, or reports"

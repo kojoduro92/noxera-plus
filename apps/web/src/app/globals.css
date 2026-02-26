@@ -65,3 +65,55 @@ a {
 .nx-brand-text {
   color: var(--brand-primary);
 }
+
+.nx-console-dark {
+  color-scheme: dark;
+}
+
+.nx-console-dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+.nx-console-dark .bg-slate-50 {
+  background-color: #111827 !important;
+}
+
+.nx-console-dark .bg-slate-100 {
+  background-color: #0b1220 !important;
+}
+
+.nx-console-dark .border-slate-100,
+.nx-console-dark .border-slate-200,
+.nx-console-dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+.nx-console-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.nx-console-dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+.nx-console-dark .text-slate-900,
+.nx-console-dark .text-slate-800,
+.nx-console-dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+.nx-console-dark .text-slate-600,
+.nx-console-dark .text-slate-500,
+.nx-console-dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.nx-console-dark input,
+.nx-console-dark select,
+.nx-console-dark textarea {
+  background-color: #0b1220 !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+.nx-console-dark input::placeholder,
+.nx-console-dark textarea::placeholder {
+  color: #64748b !important;
+}

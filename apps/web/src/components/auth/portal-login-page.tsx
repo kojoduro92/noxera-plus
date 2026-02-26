@@ -51,7 +51,6 @@ const portalConfig: Record<
   PortalType,
   {
     title: string;
-    subtitle: string;
     destinationPrefix: string;
     defaultDestination: string;
     sessionEndpoint: string;
@@ -64,7 +63,6 @@ const portalConfig: Record<
 > = {
   admin: {
     title: "Church Admin Access Portal",
-    subtitle: "Noxera Plus",
     destinationPrefix: "/admin",
     defaultDestination: "/admin",
     sessionEndpoint: "/api/admin/session",
@@ -80,7 +78,6 @@ const portalConfig: Record<
   },
   "super-admin": {
     title: "Super Admin Access Portal",
-    subtitle: "Noxera Plus",
     destinationPrefix: "/super-admin",
     defaultDestination: "/super-admin",
     sessionEndpoint: "/api/super-admin/session",
@@ -189,6 +186,7 @@ async function createPortalSession(user: User, sessionEndpoint: string, enforceS
 export function PortalLoginPage({ portal }: { portal: PortalType }) {
   const cfg = portalConfig[portal];
   const { personalization } = usePlatformPersonalization();
+  const brandName = personalization.orgName?.trim() || "Noxera Plus";
   const [method, setMethod] = useState<LoginMethod>("google");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -598,7 +596,7 @@ export function PortalLoginPage({ portal }: { portal: PortalType }) {
             )}
           </div>
           <h1 className="text-4xl font-black uppercase italic tracking-tight">
-            {cfg.subtitle.split(" ")[0]} <span className="nx-brand-text">{cfg.subtitle.split(" ")[1] ?? ""}</span>
+            {brandName.split(" ")[0]} <span className="nx-brand-text">{brandName.split(" ").slice(1).join(" ")}</span>
           </h1>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{cfg.title}</p>
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
@@ -789,7 +787,7 @@ export function PortalLoginPage({ portal }: { portal: PortalType }) {
 
         <div className="space-y-3">
           <p className="text-center text-xs font-bold tracking-tight text-slate-500">
-            Restricted access for Noxera Plus administrators only.
+            Restricted access for {brandName} administrators only.
           </p>
           <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-400">
             {cfg.footerLinks.map((link, index) => (

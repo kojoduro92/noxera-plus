@@ -1,0 +1,2750 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "AppController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/auth/session": {
+      "post": {
+        "operationId": "AuthController_createSession",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/impersonation/session": {
+      "post": {
+        "operationId": "AuthController_createImpersonationSession",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/tenants": {
+      "post": {
+        "operationId": "TenantsController_createTenant",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      },
+      "get": {
+        "operationId": "TenantsController_getTenants",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/platform/metrics": {
+      "get": {
+        "operationId": "TenantsController_getPlatformMetrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}/impersonate": {
+      "post": {
+        "operationId": "TenantsController_impersonateTenant",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/impersonate/stop": {
+      "post": {
+        "operationId": "TenantsController_stopImpersonation",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}/branches": {
+      "get": {
+        "operationId": "TenantsController_getTenantBranches",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}/users": {
+      "get": {
+        "operationId": "TenantsController_getTenantUsers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}/roles": {
+      "get": {
+        "operationId": "TenantsController_getTenantRoles",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}/audit-preview": {
+      "get": {
+        "operationId": "TenantsController_getTenantAuditPreview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}": {
+      "get": {
+        "operationId": "TenantsController_getTenantById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/tenants/{id}/status": {
+      "put": {
+        "operationId": "TenantsController_updateTenantStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/public/tenants/plans": {
+      "get": {
+        "operationId": "PublicTenantsController_getPublicPlans",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicTenants"
+        ]
+      }
+    },
+    "/public/tenants/metrics": {
+      "get": {
+        "operationId": "PublicTenantsController_getPublicMetrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicTenants"
+        ]
+      }
+    },
+    "/public/tenants/trial": {
+      "post": {
+        "operationId": "PublicTenantsController_createTrialTenant",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicTenants"
+        ]
+      }
+    },
+    "/members": {
+      "post": {
+        "operationId": "MembersController_createMember",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Members"
+        ]
+      },
+      "get": {
+        "operationId": "MembersController_getMembers",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Members"
+        ]
+      }
+    },
+    "/members/{id}": {
+      "get": {
+        "operationId": "MembersController_getMemberById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Members"
+        ]
+      },
+      "put": {
+        "operationId": "MembersController_updateMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Members"
+        ]
+      },
+      "delete": {
+        "operationId": "MembersController_deleteMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Members"
+        ]
+      }
+    },
+    "/services": {
+      "post": {
+        "operationId": "ServicesController_createService",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services"
+        ]
+      },
+      "get": {
+        "operationId": "ServicesController_getServices",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services"
+        ]
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "operationId": "ServicesController_getServiceById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services"
+        ]
+      }
+    },
+    "/attendance": {
+      "post": {
+        "operationId": "AttendanceController_createAttendanceRecord",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attendance"
+        ]
+      },
+      "get": {
+        "operationId": "AttendanceController_getAttendanceRecords",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attendance"
+        ]
+      }
+    },
+    "/attendance/service/{serviceId}": {
+      "get": {
+        "operationId": "AttendanceController_getAttendanceByService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attendance"
+        ]
+      }
+    },
+    "/attendance/{id}": {
+      "get": {
+        "operationId": "AttendanceController_getAttendanceRecordById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attendance"
+        ]
+      }
+    },
+    "/giving": {
+      "post": {
+        "operationId": "GivingController_createGivingRecord",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Giving"
+        ]
+      },
+      "get": {
+        "operationId": "GivingController_getGivingRecords",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Giving"
+        ]
+      }
+    },
+    "/giving/online": {
+      "post": {
+        "operationId": "GivingController_createOnlineGivingSession",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Giving"
+        ]
+      }
+    },
+    "/giving/summary": {
+      "get": {
+        "operationId": "GivingController_getGivingSummary",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Giving"
+        ]
+      }
+    },
+    "/groups": {
+      "post": {
+        "operationId": "GroupsController_createGroup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Groups"
+        ]
+      },
+      "get": {
+        "operationId": "GroupsController_getGroups",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/groups/{id}": {
+      "get": {
+        "operationId": "GroupsController_getGroupById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/groups/{id}/members": {
+      "post": {
+        "operationId": "GroupsController_addMemberToGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/events": {
+      "post": {
+        "operationId": "EventsController_createEvent",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Events"
+        ]
+      },
+      "get": {
+        "operationId": "EventsController_getEvents",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/{id}": {
+      "get": {
+        "operationId": "EventsController_getEventById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/followups": {
+      "post": {
+        "operationId": "FollowupsController_createFollowUp",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Followups"
+        ]
+      },
+      "get": {
+        "operationId": "FollowupsController_getFollowUps",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Followups"
+        ]
+      }
+    },
+    "/followups/{id}/status": {
+      "put": {
+        "operationId": "FollowupsController_updateFollowUpStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Followups"
+        ]
+      }
+    },
+    "/messages": {
+      "post": {
+        "operationId": "MessagesController_createMessage",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Messages"
+        ]
+      },
+      "get": {
+        "operationId": "MessagesController_getMessages",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/messages/{id}": {
+      "get": {
+        "operationId": "MessagesController_getMessageById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/messages/{id}/send": {
+      "put": {
+        "operationId": "MessagesController_sendMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/messages/{id}/status": {
+      "put": {
+        "operationId": "MessagesController_updateMessageStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/branches": {
+      "post": {
+        "operationId": "BranchesController_createBranch",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      },
+      "get": {
+        "operationId": "BranchesController_getBranches",
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/branches/{id}": {
+      "get": {
+        "operationId": "BranchesController_getBranchById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      },
+      "patch": {
+        "operationId": "BranchesController_updateBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/branches/{id}/archive": {
+      "post": {
+        "operationId": "BranchesController_archiveBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/branches/{id}/unarchive": {
+      "post": {
+        "operationId": "BranchesController_unarchiveBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/branches/{id}/stats": {
+      "get": {
+        "operationId": "BranchesController_getBranchStats",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Branches"
+        ]
+      }
+    },
+    "/integrations/google-calendar/sync": {
+      "post": {
+        "operationId": "IntegrationsController_syncGoogleCalendar",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/integrations/accounting/export": {
+      "post": {
+        "operationId": "IntegrationsController_exportToAccounting",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/integrations/active": {
+      "get": {
+        "operationId": "IntegrationsController_getActiveIntegrations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/website": {
+      "get": {
+        "operationId": "WebsiteController_getWebsite",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/theme": {
+      "put": {
+        "operationId": "WebsiteController_updateTheme",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/pages": {
+      "post": {
+        "operationId": "WebsiteController_createPage",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/pages/{id}": {
+      "put": {
+        "operationId": "WebsiteController_updatePage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/pages/{id}/sections": {
+      "post": {
+        "operationId": "WebsiteController_addSection",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/reports/members": {
+      "get": {
+        "operationId": "ReportsController_getMembersGrowth",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rangeDays",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reports"
+        ]
+      }
+    },
+    "/reports/attendance": {
+      "get": {
+        "operationId": "ReportsController_getAttendanceTrend",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rangeDays",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reports"
+        ]
+      }
+    },
+    "/reports/giving": {
+      "get": {
+        "operationId": "ReportsController_getGivingSummary",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rangeDays",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reports"
+        ]
+      }
+    },
+    "/reports/groups": {
+      "get": {
+        "operationId": "ReportsController_getGroupEngagement",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reports"
+        ]
+      }
+    },
+    "/audit-logs": {
+      "get": {
+        "operationId": "AuditLogsController_getAuditLogs",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenantId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AuditLogs"
+        ]
+      }
+    },
+    "/audit-logs/tenant/{tenantId}": {
+      "get": {
+        "operationId": "AuditLogsController_getAuditLogsByTenant",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AuditLogs"
+        ]
+      }
+    },
+    "/audit-logs/{id}": {
+      "get": {
+        "operationId": "AuditLogsController_getAuditLogById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AuditLogs"
+        ]
+      }
+    },
+    "/billing/plans": {
+      "get": {
+        "operationId": "BillingController_getPlans",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/billing/tenants": {
+      "get": {
+        "operationId": "BillingController_getTenantBilling",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "planId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/billing/tenants/{id}/plan": {
+      "patch": {
+        "operationId": "BillingController_updateTenantPlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/billing/tenants/{id}/status": {
+      "patch": {
+        "operationId": "BillingController_updateTenantStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/support/tickets": {
+      "post": {
+        "operationId": "SupportController_createTicket",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support"
+        ]
+      },
+      "get": {
+        "operationId": "SupportController_getTickets",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenantId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priority",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support"
+        ]
+      }
+    },
+    "/support/tickets/{id}": {
+      "get": {
+        "operationId": "SupportController_getTicketById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support"
+        ]
+      }
+    },
+    "/support/tickets/{id}/status": {
+      "patch": {
+        "operationId": "SupportController_updateTicketStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support"
+        ]
+      }
+    },
+    "/support/tickets/{id}/assign": {
+      "patch": {
+        "operationId": "SupportController_assignTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support"
+        ]
+      }
+    },
+    "/platform/overview": {
+      "get": {
+        "operationId": "PlatformController_getOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/users": {
+      "get": {
+        "operationId": "PlatformController_getPlatformUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenantId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/users/{id}": {
+      "get": {
+        "operationId": "PlatformController_getPlatformUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/users/{id}/status": {
+      "patch": {
+        "operationId": "PlatformController_updatePlatformUserStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/users/{id}/role": {
+      "patch": {
+        "operationId": "PlatformController_updatePlatformUserRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/users/{id}/tenant": {
+      "patch": {
+        "operationId": "PlatformController_transferPlatformUserTenant",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/users/{id}/reset-access": {
+      "post": {
+        "operationId": "PlatformController_resetPlatformUserAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/roles": {
+      "get": {
+        "operationId": "PlatformController_getPlatformRoles",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/notifications": {
+      "get": {
+        "operationId": "PlatformController_getPlatformNotifications",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/notifications/read-all": {
+      "patch": {
+        "operationId": "PlatformController_markAllPlatformNotificationsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/platform/notifications/{id}/read": {
+      "patch": {
+        "operationId": "PlatformController_markPlatformNotificationRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform"
+        ]
+      }
+    },
+    "/settings/platform": {
+      "get": {
+        "operationId": "PlatformSettingsController_getPlatformSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      },
+      "patch": {
+        "operationId": "PlatformSettingsController_updatePlatformSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      }
+    },
+    "/settings/notification-policy": {
+      "get": {
+        "operationId": "PlatformSettingsController_getNotificationPolicy",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      },
+      "patch": {
+        "operationId": "PlatformSettingsController_updateNotificationPolicy",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      }
+    },
+    "/settings/content": {
+      "get": {
+        "operationId": "PlatformSettingsController_getContentHubSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      },
+      "patch": {
+        "operationId": "PlatformSettingsController_updateContentHubSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      }
+    },
+    "/settings/system": {
+      "get": {
+        "operationId": "PlatformSettingsController_getSystemManagementSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      },
+      "patch": {
+        "operationId": "PlatformSettingsController_updateSystemManagementSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      }
+    },
+    "/settings/release-flags": {
+      "get": {
+        "operationId": "PlatformSettingsController_getReleaseFlags",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      }
+    },
+    "/settings/release-flags/{key}": {
+      "patch": {
+        "operationId": "PlatformSettingsController_updateReleaseFlag",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformSettings"
+        ]
+      }
+    },
+    "/public/platform/profile": {
+      "get": {
+        "operationId": "PublicPlatformController_getPublicPlatformProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicPlatform"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "UsersController_getUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/invite": {
+      "post": {
+        "operationId": "UsersController_inviteUser",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "patch": {
+        "operationId": "UsersController_updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/role": {
+      "patch": {
+        "operationId": "UsersController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/branches": {
+      "patch": {
+        "operationId": "UsersController_updateBranches",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/resend-invite": {
+      "post": {
+        "operationId": "UsersController_resendInvite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/suspend": {
+      "post": {
+        "operationId": "UsersController_suspendUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/reactivate": {
+      "post": {
+        "operationId": "UsersController_reactivateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/roles": {
+      "get": {
+        "operationId": "RolesController_getRoles",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Roles"
+        ]
+      },
+      "post": {
+        "operationId": "RolesController_createRole",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/roles/permissions-catalog": {
+      "get": {
+        "operationId": "RolesController_getPermissionsCatalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/roles/{id}": {
+      "patch": {
+        "operationId": "RolesController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Roles"
+        ]
+      },
+      "delete": {
+        "operationId": "RolesController_deleteRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reassignRoleId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationsController_getNotifications",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "operationId": "NotificationsController_markAllAsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notifications"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Noxera Plus API",
+    "description": "Noxera Plus platform APIs for super-admin, admin, and public onboarding.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {}
+  }
+}

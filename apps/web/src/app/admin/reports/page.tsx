@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { DonutChart, LineTrendChart, StackedBarTrendChart } from "@/components/admin/charts";
 
 type MembersReport = {
   summary: {
@@ -42,18 +45,6 @@ type GroupsReport = {
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) return error.message;
   return (error as { message?: string })?.message ?? fallback;
-}
-
-function downloadJson(filename: string, payload: unknown) {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 function formatCurrency(value: number) {
@@ -112,6 +103,82 @@ export default function ReportsPage() {
     return point ? `${point.date} (${formatCurrency(point.amount)})` : "No data";
   }, [giving]);
 
+  const attendanceStackedSeries = useMemo(
+    () =>
+      (attendance?.series ?? []).slice(-10).map((point) => ({
+        label: point.date,
+        firstLabel: "Members",
+        first: point.members,
+        secondLabel: "Visitors",
+        second: point.visitors,
+      })),
+    [attendance?.series],
+  );
+
+  const memberLineSeries = useMemo(
+    () => (members?.series ?? []).slice(-14).map((point) => ({ label: point.date, value: point.value })),
+    [members?.series],
+  );
+
+  const givingLineSeries = useMemo(
+    () => (giving?.series ?? []).slice(-14).map((point) => ({ label: point.date, value: point.amount })),
+    [giving?.series],
+  );
+
+  const givingFundSegments = useMemo(
+    () =>
+      Object.entries(giving?.summary.byFund ?? {}).map(([label, value], index) => {
+        const palette = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+        return {
+          label,
+          value,
+          color: palette[index % palette.length],
+        };
+      }),
+    [giving?.summary.byFund],
+  );
+
+  const exportRows = useMemo(() => {
+    const unionDates = new Set<string>();
+    (members?.series ?? []).forEach((point) => unionDates.add(point.date));
+    (attendance?.series ?? []).forEach((point) => unionDates.add(point.date));
+    (giving?.series ?? []).forEach((point) => unionDates.add(point.date));
+
+    return Array.from(unionDates)
+      .sort()
+      .map((date) => {
+        const memberPoint = (members?.series ?? []).find((point) => point.date === date);
+        const attendancePoint = (attendance?.series ?? []).find((point) => point.date === date);
+        const givingPoint = (giving?.series ?? []).find((point) => point.date === date);
+
+        return {
+          date,
+          members: memberPoint?.value ?? 0,
+          attendanceMembers: attendancePoint?.members ?? 0,
+          attendanceVisitors: attendancePoint?.visitors ?? 0,
+          attendanceTotal: attendancePoint?.total ?? 0,
+          givingAmount: givingPoint?.amount ?? 0,
+        };
+      });
+  }, [attendance?.series, giving?.series, members?.series]);
+
+  const handleExport = async (format: ExportFormat) => {
+    await downloadRows(
+      format,
+      `admin-reports-${new Date().toISOString().slice(0, 10)}`,
+      exportRows,
+      [
+        { label: "Date", value: (row) => row.date },
+        { label: "Members", value: (row) => row.members },
+        { label: "Attendance Members", value: (row) => row.attendanceMembers },
+        { label: "Attendance Visitors", value: (row) => row.attendanceVisitors },
+        { label: "Attendance Total", value: (row) => row.attendanceTotal },
+        { label: "Giving Amount", value: (row) => row.givingAmount.toFixed(2) },
+      ],
+      "Admin Reports",
+    );
+  };
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-900 to-violet-700 p-6 text-white shadow-lg shadow-indigo-900/20">
@@ -132,14 +199,7 @@ export default function ReportsPage() {
           <button type="button" onClick={() => void loadReports()} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
             Refresh
           </button>
-          <button
-            type="button"
-            onClick={() => downloadJson(`reports-${new Date().toISOString().slice(0, 10)}.json`, { members, attendance, giving, groups })}
-            disabled={loading || (!members && !attendance && !giving && !groups)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 disabled:opacity-50"
-          >
-            Export Snapshot
-          </button>
+          <TableExportMenu onExport={handleExport} label="Download Report" />
         </div>
       </div>
 
@@ -170,40 +230,36 @@ export default function ReportsPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-black text-slate-900">Member Growth Series</h3>
-          {loading ? (
-            <div className="mt-4 space-y-2">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-5 animate-pulse rounded bg-slate-100" />)}</div>
-          ) : !members || members.series.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">No member growth data in this range.</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {members.series.slice(-10).map((point) => (
-                <li key={point.date} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm">
-                  <span className="text-slate-600">{point.date}</span>
-                  <span className="font-bold text-slate-900">{point.value}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h3 className="text-lg font-black text-slate-900">Member Growth Trend</h3>
+          <div className="mt-4">
+            <LineTrendChart points={memberLineSeries} stroke="#4f46e5" />
+          </div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-lg font-black text-slate-900">Giving Trend</h3>
           <p className="mt-1 text-xs text-slate-500">Latest point: {latestGivingPoint}</p>
-          {loading ? (
-            <div className="mt-4 space-y-2">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-5 animate-pulse rounded bg-slate-100" />)}</div>
-          ) : !giving || giving.series.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">No giving records available yet.</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {giving.series.slice(-10).map((point) => (
-                <li key={point.date} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm">
-                  <span className="text-slate-600">{point.date}</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(point.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="mt-4">
+            <LineTrendChart points={givingLineSeries} stroke="#16a34a" />
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-black text-slate-900">Attendance Mix</h3>
+          <p className="mt-1 text-xs text-slate-500">Members vs visitors by day.</p>
+          <div className="mt-4">
+            <StackedBarTrendChart points={attendanceStackedSeries} />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-black text-slate-900">Giving by Fund</h3>
+          <p className="mt-1 text-xs text-slate-500">Fund distribution for selected range.</p>
+          <div className="mt-4">
+            <DonutChart segments={givingFundSegments} />
+          </div>
         </section>
       </div>
 

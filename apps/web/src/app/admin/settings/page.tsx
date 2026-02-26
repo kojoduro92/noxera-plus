@@ -1,11 +1,20 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { sendSignInLinkToEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-type TabKey = "branches" | "users" | "roles";
+const SETTINGS_TABS = [
+  { key: "branches", label: "Branches" },
+  { key: "users", label: "Users" },
+  { key: "roles", label: "Roles" },
+  { key: "integrations", label: "Integrations" },
+  { key: "billing", label: "Billing & Exports" },
+] as const;
+
+type TabKey = (typeof SETTINGS_TABS)[number]["key"];
 
 type BranchRow = {
   id: string;
@@ -66,12 +75,50 @@ type SessionPayload = {
   permissions?: string[];
 };
 
+type IntegrationRow = {
+  id: string;
+  name: string;
+  status: string;
+};
+
+type GivingSummary = {
+  tithes: number;
+  offerings: number;
+  special: number;
+};
+
+type BillingPreferences = {
+  invoiceDueDays: number;
+  reminderLeadDays: number;
+  statementFrequency: "weekly" | "monthly" | "quarterly";
+  defaultExportFormat: "csv" | "excel" | "pdf";
+  autoReceiptEmail: boolean;
+};
+
+const BILLING_PREFS_STORAGE_KEY = "noxera_admin_billing_preferences";
+const DEFAULT_BILLING_PREFERENCES: BillingPreferences = {
+  invoiceDueDays: 5,
+  reminderLeadDays: 3,
+  statementFrequency: "monthly",
+  defaultExportFormat: "csv",
+  autoReceiptEmail: true,
+};
+
 function getError(err: unknown, fallback: string) {
   if (err instanceof ApiError) return err.message;
   return (err as { message?: string })?.message ?? fallback;
 }
 
+function resolveTab(value: string | null): TabKey {
+  const matched = SETTINGS_TABS.find((tab) => tab.key === value);
+  return matched?.key ?? "branches";
+}
+
 export default function AdminSettingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+
   const [activeTab, setActiveTab] = useState<TabKey>("branches");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -105,6 +152,11 @@ export default function AdminSettingsPage() {
   const [editingRolePermissions, setEditingRolePermissions] = useState<string[]>([]);
   const [branchSelectionDrafts, setBranchSelectionDrafts] = useState<Record<string, string[]>>({});
   const [userDefaultBranchDrafts, setUserDefaultBranchDrafts] = useState<Record<string, string>>({});
+  const [integrations, setIntegrations] = useState<IntegrationRow[]>([]);
+  const [integrationsLoading, setIntegrationsLoading] = useState(false);
+  const [billingInsightsLoading, setBillingInsightsLoading] = useState(false);
+  const [givingSummary, setGivingSummary] = useState<GivingSummary>({ tithes: 0, offerings: 0, special: 0 });
+  const [billingPreferences, setBillingPreferences] = useState<BillingPreferences>(DEFAULT_BILLING_PREFERENCES);
 
   const activeBranchOptions = useMemo(() => branches.filter((branch) => branch.isActive), [branches]);
   const canManageBranches = useMemo(
@@ -118,6 +170,14 @@ export default function AdminSettingsPage() {
   const canManageRoles = useMemo(
     () => permissions.includes("*") || permissions.includes("roles.manage"),
     [permissions],
+  );
+  const connectedIntegrations = useMemo(
+    () => integrations.filter((integration) => integration.status.toLowerCase().includes("connected")).length,
+    [integrations],
+  );
+  const givingTotal = useMemo(
+    () => givingSummary.tithes + givingSummary.offerings + givingSummary.special,
+    [givingSummary],
   );
 
   const fetchAll = useCallback(async () => {
@@ -180,6 +240,26 @@ export default function AdminSettingsPage() {
     setUserDefaultBranchDrafts(defaultBranchDrafts);
   }, [users]);
 
+  useEffect(() => {
+    const requested = resolveTab(new URLSearchParams(searchParamsString).get("tab"));
+    setActiveTab((previous) => (previous === requested ? previous : requested));
+  }, [searchParamsString]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(BILLING_PREFS_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as Partial<BillingPreferences>;
+      setBillingPreferences((previous) => ({
+        ...previous,
+        ...parsed,
+      }));
+    } catch {
+      // Ignore malformed local billing preferences and continue with defaults.
+    }
+  }, []);
+
   const refreshUsers = useCallback(async () => {
     const payload = await apiFetch<PaginatedResponse<UserRow>>("/api/admin/users?limit=100", { cache: "no-store" });
     setUsers(payload.items);
@@ -194,6 +274,44 @@ export default function AdminSettingsPage() {
     const payload = await apiFetch<BranchRow[]>("/api/admin/branches?includeArchived=1", { cache: "no-store" });
     setBranches(payload);
   }, []);
+
+  const loadIntegrations = useCallback(async () => {
+    setIntegrationsLoading(true);
+    try {
+      const payload = await apiFetch<IntegrationRow[]>("/api/admin/integrations/active", { cache: "no-store" });
+      setIntegrations(payload);
+    } catch (err) {
+      setIntegrations([]);
+      setError(getError(err, "Unable to load integrations."));
+    } finally {
+      setIntegrationsLoading(false);
+    }
+  }, []);
+
+  const loadBillingInsights = useCallback(async () => {
+    setBillingInsightsLoading(true);
+    try {
+      const payload = await apiFetch<GivingSummary>("/api/admin/giving/summary", { cache: "no-store" });
+      setGivingSummary(payload);
+    } catch (err) {
+      setGivingSummary({ tithes: 0, offerings: 0, special: 0 });
+      setError(getError(err, "Unable to load billing insights."));
+    } finally {
+      setBillingInsightsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "integrations") {
+      void loadIntegrations();
+    }
+  }, [activeTab, loadIntegrations]);
+
+  useEffect(() => {
+    if (activeTab === "billing") {
+      void loadBillingInsights();
+    }
+  }, [activeTab, loadBillingInsights]);
 
   const sendInviteEmailLink = useCallback(async (email: string) => {
     if (!auth) {
@@ -640,6 +758,34 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const openTab = useCallback(
+    (tab: TabKey) => {
+      setActiveTab(tab);
+      const nextParams = new URLSearchParams(searchParamsString);
+      if (tab === "branches") {
+        nextParams.delete("tab");
+      } else {
+        nextParams.set("tab", tab);
+      }
+      const query = nextParams.toString();
+      router.replace(query ? `/admin/settings?${query}` : "/admin/settings", { scroll: false });
+    },
+    [router, searchParamsString],
+  );
+
+  const saveBillingPreferences = () => {
+    setError("");
+    setNotice("");
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(BILLING_PREFS_STORAGE_KEY, JSON.stringify(billingPreferences));
+      }
+      setNotice("Billing preferences saved.");
+    } catch {
+      setError("Unable to save billing preferences in this browser.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -650,16 +796,12 @@ export default function AdminSettingsPage() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="grid gap-2 sm:grid-cols-3">
-          {([
-            { key: "branches", label: "Branches" },
-            { key: "users", label: "Users" },
-            { key: "roles", label: "Roles" },
-          ] as Array<{ key: TabKey; label: string }>).map((tab) => (
+        <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-5">
+          {SETTINGS_TABS.map((tab) => (
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => openTab(tab.key)}
               className={`rounded-xl px-4 py-2 text-sm font-black uppercase tracking-wider transition ${
                 activeTab === tab.key
                   ? "bg-indigo-600 !text-white"
@@ -1215,8 +1357,257 @@ export default function AdminSettingsPage() {
           </div>
         </section>
       )}
+
+      {activeTab === "integrations" && (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Integration Policy</h3>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  Validate provider health, sync readiness, and downstream export actions.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadIntegrations()}
+                disabled={integrationsLoading}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+              >
+                {integrationsLoading ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <StatsChip label="Providers" value={integrationsLoading ? 0 : integrations.length} />
+              <StatsChip label="Connected" value={integrationsLoading ? 0 : connectedIntegrations} />
+              <StatsChip
+                label="Needs Attention"
+                value={integrationsLoading ? 0 : Math.max(integrations.length - connectedIntegrations, 0)}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => router.push("/admin/integrations")}
+                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black uppercase tracking-wider !text-white transition hover:bg-indigo-500"
+              >
+                Open Integrations
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/communication")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
+              >
+                Communication Providers
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/website")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
+              >
+                Website Integrations
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Provider</th>
+                  <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {integrationsLoading ? (
+                  <tr>
+                    <td colSpan={2} className="px-4 py-6 text-sm font-semibold text-slate-500">
+                      Loading integration status...
+                    </td>
+                  </tr>
+                ) : integrations.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="px-4 py-6 text-sm font-semibold text-slate-500">
+                      No providers are configured for this workspace yet.
+                    </td>
+                  </tr>
+                ) : (
+                  integrations.map((integration) => (
+                    <tr key={integration.id}>
+                      <td className="px-4 py-3 text-sm font-black text-slate-900">{integration.name}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ${integrationStatusTone(integration.status)}`}>
+                          {integration.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "billing" && (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="text-lg font-black text-slate-900">Billing Policy & Exports</h3>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Configure finance reporting defaults and monitor giving totals before statement runs.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Tithes (MTD)</p>
+                <p className="mt-1 text-xl font-black text-slate-900">
+                  {billingInsightsLoading ? "--" : formatCurrency(givingSummary.tithes)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Offerings (MTD)</p>
+                <p className="mt-1 text-xl font-black text-slate-900">
+                  {billingInsightsLoading ? "--" : formatCurrency(givingSummary.offerings)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Special (MTD)</p>
+                <p className="mt-1 text-xl font-black text-slate-900">
+                  {billingInsightsLoading ? "--" : formatCurrency(givingSummary.special)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Total (MTD)</p>
+                <p className="mt-1 text-xl font-black text-slate-900">{billingInsightsLoading ? "--" : formatCurrency(givingTotal)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="text-base font-black text-slate-900">Default Billing Preferences</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <label className="space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Invoice due days</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={billingPreferences.invoiceDueDays}
+                  onChange={(event) =>
+                    setBillingPreferences((previous) => ({
+                      ...previous,
+                      invoiceDueDays: Number.parseInt(event.target.value || "1", 10),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Reminder lead days</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={14}
+                  value={billingPreferences.reminderLeadDays}
+                  onChange={(event) =>
+                    setBillingPreferences((previous) => ({
+                      ...previous,
+                      reminderLeadDays: Number.parseInt(event.target.value || "1", 10),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Statement frequency</span>
+                <select
+                  value={billingPreferences.statementFrequency}
+                  onChange={(event) =>
+                    setBillingPreferences((previous) => ({
+                      ...previous,
+                      statementFrequency: event.target.value as BillingPreferences["statementFrequency"],
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </label>
+              <label className="space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Default export format</span>
+                <select
+                  value={billingPreferences.defaultExportFormat}
+                  onChange={(event) =>
+                    setBillingPreferences((previous) => ({
+                      ...previous,
+                      defaultExportFormat: event.target.value as BillingPreferences["defaultExportFormat"],
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="csv">CSV</option>
+                  <option value="excel">Excel</option>
+                  <option value="pdf">PDF</option>
+                </select>
+              </label>
+            </div>
+            <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={billingPreferences.autoReceiptEmail}
+                onChange={(event) =>
+                  setBillingPreferences((previous) => ({
+                    ...previous,
+                    autoReceiptEmail: event.target.checked,
+                  }))
+                }
+              />
+              Send auto receipt email when giving transactions are recorded.
+            </label>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={saveBillingPreferences}
+                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black uppercase tracking-wider !text-white transition hover:bg-indigo-500"
+              >
+                Save Preferences
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/giving")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
+              >
+                Open Giving Ledger
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/reports")}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
+              >
+                Open Reports
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
+}
+
+function integrationStatusTone(status: string) {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("connected") || normalized.includes("healthy")) return "bg-emerald-100 text-emerald-700";
+  if (normalized.includes("degraded") || normalized.includes("warning") || normalized.includes("pending")) {
+    return "bg-amber-100 text-amber-700";
+  }
+  return "bg-slate-200 text-slate-700";
 }
 
 function StatsChip({ label, value }: { label: string; value: number }) {

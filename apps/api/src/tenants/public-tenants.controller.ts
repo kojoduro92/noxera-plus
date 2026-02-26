@@ -11,6 +11,11 @@ export class PublicTenantsController {
     return this.tenantsService.getPublicPlans();
   }
 
+  @Get('metrics')
+  getPublicMetrics() {
+    return this.tenantsService.getPublicMetrics();
+  }
+
   @Post('trial')
   createTrialTenant(@Body() body: CreateTenantPayload) {
     return this.tenantsService.createTenant({

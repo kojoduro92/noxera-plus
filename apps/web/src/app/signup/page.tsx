@@ -11,6 +11,13 @@ type PublicPlan = {
   description: string;
 };
 
+type PublicProfile = {
+  orgName: string;
+  logoUrl?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+};
+
 type CreatedTenant = {
   id: string;
   name: string;
@@ -40,6 +47,12 @@ export default function SignupPage() {
   const [sizeRange, setSizeRange] = useState("");
   const [plan, setPlan] = useState("Pro");
   const [plans, setPlans] = useState<PublicPlan[]>([]);
+  const [profile, setProfile] = useState<PublicProfile>({
+    orgName: "Noxera Plus",
+    logoUrl: "/brand-logo.png",
+    brandPrimaryColor: "#d62f9d",
+    brandAccentColor: "#0bb9f4",
+  });
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -67,6 +80,21 @@ export default function SignupPage() {
     };
 
     void loadPlans();
+  }, []);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await fetch("/api/public/platform-profile", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json().catch(() => ({}))) as Partial<PublicProfile>;
+        setProfile((current) => ({ ...current, ...payload }));
+      } catch {
+        // Keep defaults when public profile fetch fails.
+      }
+    };
+
+    void loadProfile();
   }, []);
 
   const trialDays = useMemo(() => {
@@ -117,14 +145,25 @@ export default function SignupPage() {
   };
 
   const loginUrl = created ? created.onboarding.adminLoginPath : "/login";
+  const brandName = profile.orgName?.trim() || "Noxera Plus";
+  const logoUrl = profile.logoUrl?.trim() || "/brand-logo.png";
+  const brandPrimaryColor = profile.brandPrimaryColor || "#d62f9d";
+  const brandAccentColor = profile.brandAccentColor || "#0bb9f4";
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-6xl">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-          <Link href="/" className="inline-flex items-center gap-3 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-3 py-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500 text-xs font-black !text-white">N+</span>
-            <span className="text-sm font-black tracking-wide">NOXERA PLUS</span>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-3 rounded-xl border px-3 py-2"
+            style={{ borderColor: `${brandPrimaryColor}4d`, backgroundColor: `${brandPrimaryColor}1a` }}
+          >
+            <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-white text-xs font-black !text-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoUrl} alt={`${brandName} logo`} className="h-full w-full object-cover" />
+            </span>
+            <span className="text-sm font-black tracking-wide">{brandName.toUpperCase()}</span>
           </Link>
           <div className="flex items-center gap-2">
             <Link href="/login" className="rounded-lg border border-slate-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-200 transition hover:border-indigo-300 hover:text-indigo-100">
@@ -146,15 +185,15 @@ export default function SignupPage() {
 
             <ul className="mt-6 space-y-3 text-sm text-slate-200">
               <li className="flex items-start gap-2">
-                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: brandAccentColor }} />
                 Instant tenant + default branch provisioning
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: brandAccentColor }} />
                 Google-first login with OTP fallback option
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: brandAccentColor }} />
                 Upgrade to paid plan after trial ends
               </li>
             </ul>
@@ -170,7 +209,7 @@ export default function SignupPage() {
                       { name: "Enterprise", price: 199, trialDays: 14, description: "Scale governance" },
                     ]
                 ).map((item) => (
-                  <div key={item.name} className={`rounded-xl border p-3 ${plan === item.name ? "border-indigo-300 bg-slate-900" : "border-slate-700 bg-slate-950/60"}`}>
+                  <div key={item.name} className={`rounded-xl border p-3 ${plan === item.name ? "bg-slate-900" : "border-slate-700 bg-slate-950/60"}`} style={plan === item.name ? { borderColor: brandAccentColor } : undefined}>
                     <p className="text-xs font-black uppercase tracking-wider text-slate-200">{item.name}</p>
                     <p className="mt-1 text-lg font-black text-white">${item.price}<span className="ml-1 text-[10px] text-slate-400">/mo</span></p>
                     <p className="mt-1 text-[11px] text-slate-400">{item.description}</p>
@@ -258,7 +297,8 @@ export default function SignupPage() {
                   <button
                     type="submit"
                     disabled={submitting || loadingPlans}
-                    className="w-full rounded-2xl bg-indigo-600 py-4 text-sm font-black uppercase tracking-widest !text-white shadow-xl shadow-indigo-600/25 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest !text-white shadow-xl transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ backgroundColor: brandPrimaryColor, boxShadow: `0 20px 40px ${brandPrimaryColor}50` }}
                   >
                     {submitting ? "Creating Workspace..." : `Start ${trialDays}-Day Free Trial`}
                   </button>
@@ -282,7 +322,7 @@ export default function SignupPage() {
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Link href="/login" className="rounded-xl bg-indigo-600 px-4 py-3 text-center text-xs font-black uppercase tracking-wider !text-white transition hover:bg-indigo-500">
+                  <Link href="/login" className="rounded-xl px-4 py-3 text-center text-xs font-black uppercase tracking-wider !text-white transition hover:opacity-90" style={{ backgroundColor: brandPrimaryColor }}>
                     Continue to Admin Login
                   </Link>
                   <button

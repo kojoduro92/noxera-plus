@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="noxera-base" x1="40" y1="420" x2="472" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#05B9F4"/>
+      <stop offset="0.45" stop-color="#4A2BD6"/>
+      <stop offset="1" stop-color="#FF4F6A"/>
+    </linearGradient>
+    <linearGradient id="noxera-glow" x1="90" y1="120" x2="420" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F93EC0" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#2C1D88" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="n-shadow" x="82" y="98" width="348" height="332" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#0F1C5D" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect x="26" y="26" width="460" height="460" rx="102" fill="url(#noxera-base)"/>
+  <rect x="26" y="26" width="460" height="460" rx="102" fill="url(#noxera-glow)"/>
+
+  <g filter="url(#n-shadow)">
+    <path d="M116 354V158h66l176 134V158h64v196h-66L180 220v134h-64z" fill="white"/>
+  </g>
+</svg>

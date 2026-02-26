@@ -27,9 +27,11 @@ const DEFAULT_PLATFORM_PROFILE = {
   defaultCurrency: 'USD',
   defaultCountry: 'US',
   defaultLanguage: 'en',
-  logoUrl: '',
-  brandPrimaryColor: '#4f46e5',
-  brandAccentColor: '#22c55e',
+  logoUrl: '/brand-logo.png',
+  faviconUrl: '/brand-favicon.png',
+  themeMode: 'system',
+  brandPrimaryColor: '#d62f9d',
+  brandAccentColor: '#0bb9f4',
   supportedLanguages: ['en', 'fr'],
   supportedCountries: ['US', 'CA', 'GB', 'FR', 'GH', 'NG'],
   supportedCurrencies: ['USD', 'EUR', 'GBP', 'CAD', 'GHS', 'NGN'],
@@ -139,18 +141,23 @@ export class PlatformSettingsService {
 
   async getPublicPlatformProfile() {
     const profile = await this.getSetting(PLATFORM_PROFILE_KEY, DEFAULT_PLATFORM_PROFILE);
+    const readString = (value: unknown, fallback: string) => {
+      if (typeof value !== 'string') return fallback;
+      const normalized = value.trim();
+      return normalized || fallback;
+    };
 
     return {
-      orgName: typeof profile.orgName === 'string' ? profile.orgName : DEFAULT_PLATFORM_PROFILE.orgName,
-      defaultLocale: typeof profile.defaultLocale === 'string' ? profile.defaultLocale : DEFAULT_PLATFORM_PROFILE.defaultLocale,
-      defaultCurrency: typeof profile.defaultCurrency === 'string' ? profile.defaultCurrency : DEFAULT_PLATFORM_PROFILE.defaultCurrency,
-      defaultCountry: typeof profile.defaultCountry === 'string' ? profile.defaultCountry : DEFAULT_PLATFORM_PROFILE.defaultCountry,
-      defaultLanguage: typeof profile.defaultLanguage === 'string' ? profile.defaultLanguage : DEFAULT_PLATFORM_PROFILE.defaultLanguage,
-      logoUrl: typeof profile.logoUrl === 'string' ? profile.logoUrl : DEFAULT_PLATFORM_PROFILE.logoUrl,
-      brandPrimaryColor:
-        typeof profile.brandPrimaryColor === 'string' ? profile.brandPrimaryColor : DEFAULT_PLATFORM_PROFILE.brandPrimaryColor,
-      brandAccentColor:
-        typeof profile.brandAccentColor === 'string' ? profile.brandAccentColor : DEFAULT_PLATFORM_PROFILE.brandAccentColor,
+      orgName: readString(profile.orgName, DEFAULT_PLATFORM_PROFILE.orgName),
+      defaultLocale: readString(profile.defaultLocale, DEFAULT_PLATFORM_PROFILE.defaultLocale),
+      defaultCurrency: readString(profile.defaultCurrency, DEFAULT_PLATFORM_PROFILE.defaultCurrency),
+      defaultCountry: readString(profile.defaultCountry, DEFAULT_PLATFORM_PROFILE.defaultCountry),
+      defaultLanguage: readString(profile.defaultLanguage, DEFAULT_PLATFORM_PROFILE.defaultLanguage),
+      logoUrl: readString(profile.logoUrl, DEFAULT_PLATFORM_PROFILE.logoUrl),
+      faviconUrl: readString(profile.faviconUrl, DEFAULT_PLATFORM_PROFILE.faviconUrl),
+      themeMode: readString(profile.themeMode, DEFAULT_PLATFORM_PROFILE.themeMode),
+      brandPrimaryColor: readString(profile.brandPrimaryColor, DEFAULT_PLATFORM_PROFILE.brandPrimaryColor),
+      brandAccentColor: readString(profile.brandAccentColor, DEFAULT_PLATFORM_PROFILE.brandAccentColor),
     };
   }
 

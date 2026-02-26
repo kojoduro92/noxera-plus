@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { downloadRowsAsCsv } from "@/lib/export-utils";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { ConfirmActionModal } from "@/components/super-admin/confirm-action-modal";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type NotificationRow = {
   id: string;
@@ -98,15 +99,15 @@ export default function SuperAdminNotificationsPage() {
   };
 
   const unreadCount = useMemo(() => payload?.unreadCount ?? 0, [payload?.unreadCount]);
-  const exportRows = () => {
-    downloadRowsAsCsv("super-admin-notifications.csv", payload?.items ?? [], [
+  const exportRows = async (format: ExportFormat) => {
+    await downloadRows(format, "super-admin-notifications", payload?.items ?? [], [
       { label: "Created", value: (row) => new Date(row.createdAt).toLocaleString() },
       { label: "Type", value: (row) => row.type },
       { label: "Title", value: (row) => row.title },
       { label: "Severity", value: (row) => row.severity },
       { label: "Read", value: (row) => (row.readAt ? "Yes" : "No") },
       { label: "Body", value: (row) => row.body },
-    ]);
+    ], "Super Admin Notifications");
   };
 
   return (
@@ -133,7 +134,7 @@ export default function SuperAdminNotificationsPage() {
             Unread only
           </label>
           <button type="button" onClick={() => void loadNotifications()} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700">Refresh</button>
-          <button type="button" onClick={exportRows} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700">Download CSV</button>
+          <TableExportMenu onExport={exportRows} label="Download" />
           <button type="button" onClick={() => setConfirmMarkAllOpen(true)} disabled={unreadCount === 0} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black uppercase tracking-wider text-white disabled:opacity-50">Mark all read</button>
         </div>
       </div>

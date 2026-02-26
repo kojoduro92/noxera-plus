@@ -1,5 +1,32 @@
 import Link from "next/link";
 
+type PublicPlan = {
+  name: string;
+  price: number;
+  trialDays: number;
+  description: string;
+};
+
+type PublicMetrics = {
+  churchCount: number;
+  activeUsers: number;
+  branchCount: number;
+  trialDays: number;
+  setupMinutes: number;
+  onboardingMode: string;
+};
+
+type PublicProfile = {
+  orgName: string;
+  defaultLocale: string;
+  defaultCurrency: string;
+  logoUrl?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+};
+
+const API_BASE_URL = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+
 const coreFeatures = [
   {
     title: "Members Lifecycle",
@@ -19,32 +46,42 @@ const coreFeatures = [
   },
 ];
 
-const metrics = [
-  { label: "Church workflows automated", value: "30+" },
-  { label: "Average setup time", value: "< 15 min" },
-  { label: "Free trial", value: "14 days" },
-  { label: "Admin onboarding", value: "Google-first" },
-];
+const fallbackProfile: PublicProfile = {
+  orgName: "Noxera Plus",
+  defaultLocale: "en-US",
+  defaultCurrency: "USD",
+  logoUrl: "/brand-logo.png",
+  brandPrimaryColor: "#d62f9d",
+  brandAccentColor: "#0bb9f4",
+};
 
-const plans = [
+const fallbackMetrics: PublicMetrics = {
+  churchCount: 30,
+  activeUsers: 120,
+  branchCount: 45,
+  trialDays: 14,
+  setupMinutes: 15,
+  onboardingMode: "Google + Password + OTP",
+};
+
+const fallbackPlans: PublicPlan[] = [
   {
     name: "Basic",
-    price: "$49",
-    description: "For single campus teams getting started.",
-    features: ["Members directory", "Services calendar", "Basic reports"],
+    price: 49,
+    trialDays: 14,
+    description: "Core church operations for growing ministries.",
   },
   {
     name: "Pro",
-    price: "$99",
-    featured: true,
-    description: "For growing churches with active operations.",
-    features: ["Everything in Basic", "Attendance analytics", "Giving + exports"],
+    price: 99,
+    trialDays: 14,
+    description: "Advanced workflows for multi-branch operations.",
   },
   {
     name: "Enterprise",
-    price: "$199",
-    description: "For larger organizations needing governance.",
-    features: ["Everything in Pro", "Advanced controls", "Priority support"],
+    price: 199,
+    trialDays: 14,
+    description: "Platform-scale governance and premium support.",
   },
 ];
 
@@ -70,21 +107,76 @@ const portalCards = [
   },
 ];
 
-export default function Home() {
+async function fetchPublicJson<T>(path: string, fallback: T): Promise<T> {
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return fallback;
+    }
+
+    return (await response.json().catch(() => fallback)) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function formatPrice(value: number, currency: string, locale: string) {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `$${value}`;
+  }
+}
+
+export default async function Home() {
+  const [profile, metrics, plans] = await Promise.all([
+    fetchPublicJson<PublicProfile>("/public/platform/profile", fallbackProfile),
+    fetchPublicJson<PublicMetrics>("/public/tenants/metrics", fallbackMetrics),
+    fetchPublicJson<PublicPlan[]>("/public/tenants/plans", fallbackPlans),
+  ]);
+
+  const brandName = profile.orgName?.trim() || fallbackProfile.orgName;
+  const brandPrimaryColor = profile.brandPrimaryColor || fallbackProfile.brandPrimaryColor || "#d62f9d";
+  const brandAccentColor = profile.brandAccentColor || fallbackProfile.brandAccentColor || "#0bb9f4";
+  const logoUrl = profile.logoUrl || fallbackProfile.logoUrl || "/brand-logo.png";
+  const displayPlans = plans.length > 0 ? plans : fallbackPlans;
+  const formattedMetrics = [
+    { label: "Churches onboarded", value: String(metrics.churchCount) },
+    { label: "Active platform users", value: String(metrics.activeUsers) },
+    { label: "Average setup time", value: `< ${metrics.setupMinutes} min` },
+    { label: "Active branches", value: String(metrics.branchCount) },
+    { label: "Free trial", value: `${metrics.trialDays} days` },
+    { label: "Admin onboarding", value: metrics.onboardingMode },
+  ];
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="relative overflow-hidden border-b border-indigo-900/50 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.30),_rgba(2,6,23,0.98)_55%)]">
         <div className="mx-auto max-w-6xl px-6 pb-20 pt-8 md:pt-10">
           <header className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" className="inline-flex items-center gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500 text-xs font-black !text-white">N+</span>
-              <span className="text-sm font-black tracking-wide">NOXERA PLUS</span>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-3 rounded-xl border px-3 py-2"
+              style={{ borderColor: `${brandPrimaryColor}4d`, backgroundColor: `${brandPrimaryColor}1a` }}
+            >
+              <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-white text-xs font-black !text-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt={`${brandName} logo`} className="h-full w-full object-cover" />
+              </span>
+              <span className="text-sm font-black tracking-wide">{brandName.toUpperCase()}</span>
             </Link>
             <nav className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-wider">
               <Link href="/docs" className="rounded-lg border border-slate-700 px-4 py-2 text-slate-200 transition hover:border-indigo-300 hover:text-indigo-100">
                 Docs
               </Link>
-              <Link href="/signup" className="rounded-lg bg-indigo-600 px-4 py-2 !text-white transition hover:bg-indigo-500">
+              <Link href="/signup" className="rounded-lg px-4 py-2 !text-white transition hover:opacity-90" style={{ backgroundColor: brandPrimaryColor }}>
                 Start Free Trial
               </Link>
               <Link href="/login" className="rounded-lg border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-indigo-300 hover:text-indigo-100">
@@ -102,12 +194,12 @@ export default function Home() {
                 Grow your church with one operational system for members, services, giving, and reporting.
               </h1>
               <p className="mt-5 max-w-2xl text-base text-slate-300">
-                Noxera Plus helps ministries run daily operations with professional workflows, clear accountability, and tenant-safe architecture.
+                {brandName} helps ministries run daily operations with professional workflows, clear accountability, and tenant-safe architecture.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/signup" className="rounded-xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider !text-white transition hover:bg-indigo-500">
-                  Start 14-Day Free Trial
+                <Link href="/signup" className="rounded-xl px-6 py-3 text-xs font-black uppercase tracking-wider !text-white transition hover:opacity-90" style={{ backgroundColor: brandPrimaryColor }}>
+                  Start {metrics.trialDays}-Day Free Trial
                 </Link>
                 <Link href="/grace" className="rounded-xl border border-slate-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-slate-100 transition hover:border-indigo-300 hover:text-indigo-100">
                   View Sample Church Site
@@ -116,9 +208,9 @@ export default function Home() {
             </div>
 
             <div className="rounded-3xl border border-slate-700/80 bg-slate-900/70 p-6 shadow-2xl shadow-black/30">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-indigo-200">Why teams choose Noxera</p>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-indigo-200">Why teams choose {brandName}</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
-                {metrics.map((metric) => (
+                {formattedMetrics.map((metric) => (
                   <div key={metric.label} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3">
                     <p className="text-2xl font-black text-white">{metric.value}</p>
                     <p className="mt-1 text-[11px] font-semibold text-slate-400">{metric.label}</p>
@@ -151,33 +243,43 @@ export default function Home() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-black tracking-tight">Pricing that starts with trial</h2>
-              <p className="mt-2 text-sm text-slate-300">All plans begin with a 14-day free trial. Upgrade to your selected plan afterward.</p>
+              <p className="mt-2 text-sm text-slate-300">All plans begin with a {metrics.trialDays}-day free trial. Upgrade to your selected plan afterward.</p>
             </div>
-            <Link href="/signup" className="rounded-xl bg-indigo-600 px-5 py-3 text-xs font-black uppercase tracking-wider !text-white transition hover:bg-indigo-500">
+            <Link href="/signup" className="rounded-xl px-5 py-3 text-xs font-black uppercase tracking-wider !text-white transition hover:opacity-90" style={{ backgroundColor: brandPrimaryColor }}>
               Start Trial
             </Link>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {plans.map((plan) => (
+            {displayPlans.map((plan) => (
               <article
                 key={plan.name}
                 className={`rounded-2xl border p-5 ${
-                  plan.featured
-                    ? "border-indigo-500 bg-indigo-600/15 shadow-lg shadow-indigo-900/40"
+                  plan.name.toLowerCase() === "pro"
+                    ? "bg-indigo-600/15 shadow-lg shadow-indigo-900/40"
                     : "border-slate-700 bg-slate-950/70"
                 }`}
+                style={plan.name.toLowerCase() === "pro" ? { borderColor: brandAccentColor } : undefined}
               >
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">{plan.name}</p>
-                <p className="mt-2 text-3xl font-black text-white">{plan.price}<span className="ml-1 text-sm text-slate-400">/ mo</span></p>
+                <p className="mt-2 text-3xl font-black text-white">
+                  {formatPrice(plan.price, profile.defaultCurrency, profile.defaultLocale)}
+                  <span className="ml-1 text-sm text-slate-400">/ mo</span>
+                </p>
                 <p className="mt-2 text-sm text-slate-300">{plan.description}</p>
                 <ul className="mt-4 space-y-2 text-sm text-slate-200">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-400" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
+                  <li className="flex items-start gap-2">
+                      <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: brandAccentColor }} />
+                    <span>{plan.trialDays}-day free trial</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                      <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: brandAccentColor }} />
+                    <span>Role-based admin controls</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                      <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: brandAccentColor }} />
+                    <span>CSV, PDF, and Excel exports</span>
+                  </li>
                 </ul>
               </article>
             ))}
@@ -197,9 +299,10 @@ export default function Home() {
                 href={card.href}
                 className={`mt-4 inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wider transition ${
                   card.primary
-                    ? "bg-indigo-600 !text-white hover:bg-indigo-500"
+                    ? " !text-white hover:opacity-90"
                     : "border border-slate-600 text-slate-100 hover:border-indigo-300 hover:text-indigo-100"
                 }`}
+                style={card.primary ? { backgroundColor: brandPrimaryColor } : undefined}
               >
                 {card.action}
               </Link>
@@ -216,7 +319,7 @@ export default function Home() {
             <Link href="/trust" className="hover:text-slate-200">Trust & Security</Link>
             <Link href="/pricing-faq" className="hover:text-slate-200">Pricing FAQ</Link>
           </div>
-          <p>© {new Date().getFullYear()} Noxera Plus. Church operations platform.</p>
+          <p>© {new Date().getFullYear()} {brandName}. Church operations platform.</p>
         </div>
       </section>
     </main>

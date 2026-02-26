@@ -15,6 +15,8 @@ type PlatformProfile = {
   defaultCountry?: string;
   defaultLanguage?: string;
   logoUrl?: string;
+  faviconUrl?: string;
+  themeMode?: "light" | "dark" | "system";
   brandPrimaryColor?: string;
   brandAccentColor?: string;
   supportedLanguages?: string[];
@@ -65,7 +67,7 @@ type ReleaseFlagsResponse = {
   items: ReleaseFlag[];
 };
 
-const BRAND_PRESETS = ["#4f46e5", "#2563eb", "#0891b2", "#0f766e", "#c2410c", "#be123c"];
+const BRAND_PRESETS = ["#d62f9d", "#0bb9f4", "#4f46e5", "#2563eb", "#0891b2", "#be123c"];
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) return error.message;
@@ -148,9 +150,11 @@ export default function SuperAdminSettingsPage() {
         defaultCountry: settingsPayload.platformProfile.defaultCountry ?? "US",
         defaultCurrency: settingsPayload.platformProfile.defaultCurrency ?? "USD",
         defaultLocale: settingsPayload.platformProfile.defaultLocale ?? "en-US",
-        logoUrl: settingsPayload.platformProfile.logoUrl ?? "",
-        brandPrimaryColor: sanitizeColor(settingsPayload.platformProfile.brandPrimaryColor ?? "#4f46e5", "#4f46e5"),
-        brandAccentColor: sanitizeColor(settingsPayload.platformProfile.brandAccentColor ?? "#22c55e", "#22c55e"),
+        logoUrl: settingsPayload.platformProfile.logoUrl || "/brand-logo.png",
+        faviconUrl: settingsPayload.platformProfile.faviconUrl || "/brand-favicon.png",
+        themeMode: settingsPayload.platformProfile.themeMode ?? "system",
+        brandPrimaryColor: sanitizeColor(settingsPayload.platformProfile.brandPrimaryColor ?? "#d62f9d", "#d62f9d"),
+        brandAccentColor: sanitizeColor(settingsPayload.platformProfile.brandAccentColor ?? "#0bb9f4", "#0bb9f4"),
         supportedLanguages: settingsPayload.platformProfile.supportedLanguages ?? ["en", "fr"],
         supportedCountries: settingsPayload.platformProfile.supportedCountries ?? ["US", "CA", "GB", "FR", "GH", "NG"],
         supportedCurrencies: settingsPayload.platformProfile.supportedCurrencies ?? ["USD", "EUR", "GBP", "CAD", "GHS", "NGN"],
@@ -355,23 +359,60 @@ export default function SuperAdminSettingsPage() {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-xs font-black uppercase tracking-wider text-slate-500 sm:col-span-2">
+                    Favicon URL
+                    <input
+                      value={settings.platformProfile.faviconUrl ?? ""}
+                      onChange={(event) => {
+                        const faviconUrl = event.target.value;
+                        setSettings((current) =>
+                          current ? { ...current, platformProfile: { ...current.platformProfile, faviconUrl } } : current,
+                        );
+                        setPersonalization({ faviconUrl });
+                      }}
+                      placeholder="Favicon URL or data URI"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+
+                  <label className="space-y-1 text-xs font-black uppercase tracking-wider text-slate-500 sm:col-span-2">
+                    Theme preference
+                    <select
+                      value={settings.platformProfile.themeMode ?? "system"}
+                      onChange={(event) => {
+                        const themeMode = event.target.value as "light" | "dark" | "system";
+                        setSettings((current) =>
+                          current ? { ...current, platformProfile: { ...current.platformProfile, themeMode } } : current,
+                        );
+                        setPersonalization({ themeMode });
+                      }}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      <option value="system">System</option>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
                   <label className="space-y-1 text-xs font-black uppercase tracking-wider text-slate-500">
                     Primary color
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
-                        value={settings.platformProfile.brandPrimaryColor ?? "#4f46e5"}
+                        value={settings.platformProfile.brandPrimaryColor ?? "#d62f9d"}
                         onChange={(event) => {
-                          const nextColor = sanitizeColor(event.target.value, "#4f46e5");
+                          const nextColor = sanitizeColor(event.target.value, "#d62f9d");
                           setSettings((current) => current ? ({ ...current, platformProfile: { ...current.platformProfile, brandPrimaryColor: nextColor } }) : current);
                           setPersonalization({ brandPrimaryColor: nextColor });
                         }}
                         className="h-9 w-12 rounded-md border border-slate-300 bg-white"
                       />
                       <input
-                        value={settings.platformProfile.brandPrimaryColor ?? "#4f46e5"}
+                        value={settings.platformProfile.brandPrimaryColor ?? "#d62f9d"}
                         onChange={(event) => {
-                          const nextColor = sanitizeColor(event.target.value, "#4f46e5");
+                          const nextColor = sanitizeColor(event.target.value, "#d62f9d");
                           setSettings((current) => current ? ({ ...current, platformProfile: { ...current.platformProfile, brandPrimaryColor: nextColor } }) : current);
                           setPersonalization({ brandPrimaryColor: nextColor });
                         }}
@@ -385,18 +426,18 @@ export default function SuperAdminSettingsPage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
-                        value={settings.platformProfile.brandAccentColor ?? "#22c55e"}
+                        value={settings.platformProfile.brandAccentColor ?? "#0bb9f4"}
                         onChange={(event) => {
-                          const nextColor = sanitizeColor(event.target.value, "#22c55e");
+                          const nextColor = sanitizeColor(event.target.value, "#0bb9f4");
                           setSettings((current) => current ? ({ ...current, platformProfile: { ...current.platformProfile, brandAccentColor: nextColor } }) : current);
                           setPersonalization({ brandAccentColor: nextColor });
                         }}
                         className="h-9 w-12 rounded-md border border-slate-300 bg-white"
                       />
                       <input
-                        value={settings.platformProfile.brandAccentColor ?? "#22c55e"}
+                        value={settings.platformProfile.brandAccentColor ?? "#0bb9f4"}
                         onChange={(event) => {
-                          const nextColor = sanitizeColor(event.target.value, "#22c55e");
+                          const nextColor = sanitizeColor(event.target.value, "#0bb9f4");
                           setSettings((current) => current ? ({ ...current, platformProfile: { ...current.platformProfile, brandAccentColor: nextColor } }) : current);
                           setPersonalization({ brandAccentColor: nextColor });
                         }}

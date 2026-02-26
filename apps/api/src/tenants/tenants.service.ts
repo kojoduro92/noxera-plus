@@ -336,7 +336,25 @@ export class TenantsService {
     }
   }
 
-  getPublicPlans() {
+  async getPublicPlans() {
+    const plans = await this.prisma.plan.findMany({
+      orderBy: [{ price: 'asc' }, { name: 'asc' }],
+      select: {
+        name: true,
+        price: true,
+        description: true,
+      },
+    });
+
+    if (plans.length > 0) {
+      return plans.map((plan) => ({
+        name: plan.name,
+        price: plan.price,
+        trialDays: 14,
+        description: plan.description || `${plan.name} plan for church operations.`,
+      }));
+    }
+
     return [
       {
         name: 'Basic',
@@ -357,6 +375,23 @@ export class TenantsService {
         description: 'Platform-scale governance and premium support.',
       },
     ];
+  }
+
+  async getPublicMetrics() {
+    const [churchCount, activeUsers, branchCount] = await this.prisma.$transaction([
+      this.prisma.tenant.count(),
+      this.prisma.user.count({ where: { isSuperAdmin: false, status: 'Active' } }),
+      this.prisma.branch.count({ where: { isActive: true } }),
+    ]);
+
+    return {
+      churchCount,
+      activeUsers,
+      branchCount,
+      trialDays: 14,
+      setupMinutes: 15,
+      onboardingMode: 'Google + Password + OTP',
+    };
   }
 
   async getTenants() {

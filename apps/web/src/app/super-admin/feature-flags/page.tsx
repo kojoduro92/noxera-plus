@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch, withJsonBody } from "@/lib/api-client";
-import { downloadRowsAsCsv } from "@/lib/export-utils";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { ConfirmActionModal } from "@/components/super-admin/confirm-action-modal";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type ReleaseFlag = {
   id: string;
@@ -94,14 +95,14 @@ export default function FeatureFlagsPage() {
     return next;
   }, [flags, sortBy, sortDirection]);
 
-  const exportRows = () => {
-    downloadRowsAsCsv("super-admin-feature-flags.csv", sortedFlags, [
+  const exportRows = async (format: ExportFormat) => {
+    await downloadRows(format, "super-admin-feature-flags", sortedFlags, [
       { label: "Key", value: (row) => row.key },
       { label: "Stage", value: (row) => row.rolloutStage },
       { label: "Enabled", value: (row) => (row.enabled ? "Yes" : "No") },
       { label: "Owner", value: (row) => row.owner ?? "" },
       { label: "Description", value: (row) => row.description ?? "" },
-    ]);
+    ], "Super Admin Feature Flags");
   };
 
   return (
@@ -161,13 +162,7 @@ export default function FeatureFlagsPage() {
                 <option value="asc">Asc</option>
                 <option value="desc">Desc</option>
               </select>
-              <button
-                type="button"
-                onClick={exportRows}
-                className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100"
-              >
-                CSV
-              </button>
+              <TableExportMenu onExport={exportRows} label="Export" />
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as admin from 'firebase-admin';
 import { PrismaService } from './prisma/prisma.service';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function runTenantIsolationStartupReport(prisma: PrismaService) {
   const [unlinkedAdmins, inconsistentBranchAssignments] = await Promise.all([
@@ -90,6 +91,15 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Noxera Plus API')
+    .setDescription('Noxera Plus platform APIs for super-admin, admin, and public onboarding.')
+    .setVersion('1.0.0')
+    .build();
+  const openApiDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, openApiDocument, {
+    jsonDocumentUrl: '/docs/openapi.json',
+  });
   const prisma = app.get(PrismaService);
   await runTenantIsolationStartupReport(prisma);
   // Enable CORS for frontend

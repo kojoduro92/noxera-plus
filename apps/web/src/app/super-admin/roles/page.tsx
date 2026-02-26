@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { downloadRowsAsCsv } from "@/lib/export-utils";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type RoleRow = {
   id: string;
@@ -76,14 +77,14 @@ export default function SuperAdminRolesPage() {
     return next;
   }, [roles, sortBy, sortDirection]);
 
-  const exportRows = () => {
-    downloadRowsAsCsv("super-admin-roles.csv", sortedRoles, [
+  const exportRows = async (format: ExportFormat) => {
+    await downloadRows(format, "super-admin-roles", sortedRoles, [
       { label: "Role", value: (row) => row.name },
       { label: "Tenant", value: (row) => row.tenant?.name ?? "" },
       { label: "Type", value: (row) => (row.isSystem ? "System" : "Custom") },
       { label: "Permissions", value: (row) => row.permissions.length },
       { label: "Users", value: (row) => row._count.users },
-    ]);
+    ], "Super Admin Roles");
   };
 
   return (
@@ -121,13 +122,7 @@ export default function SuperAdminRolesPage() {
             <option value="asc">Asc</option>
             <option value="desc">Desc</option>
           </select>
-          <button
-            type="button"
-            onClick={exportRows}
-            className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
-          >
-            Download CSV
-          </button>
+          <TableExportMenu onExport={exportRows} />
         </div>
       </section>
 

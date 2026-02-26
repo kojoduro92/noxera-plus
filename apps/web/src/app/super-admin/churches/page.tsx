@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
-import { downloadRowsAsCsv } from "@/lib/export-utils";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { ConfirmActionModal } from "@/components/super-admin/confirm-action-modal";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type Church = {
   id: string;
@@ -104,8 +105,8 @@ export default function ChurchesDirectoryPage() {
     return next;
   }, [churches, search, sortBy, sortDirection, statusFilter]);
 
-  const exportVisibleRows = () => {
-    downloadRowsAsCsv("super-admin-churches.csv", filteredChurches, [
+  const exportVisibleRows = async (format: ExportFormat) => {
+    await downloadRows(format, "super-admin-churches", filteredChurches, [
       { label: "Church", value: (church) => church.name },
       { label: "Domain", value: (church) => `${church.domain}.noxera.plus` },
       { label: "Owner", value: (church) => church.ownerEmail ?? "" },
@@ -113,7 +114,7 @@ export default function ChurchesDirectoryPage() {
       { label: "Branches", value: (church) => church.branchCount ?? 0 },
       { label: "Users", value: (church) => church.userCount ?? 0 },
       { label: "Status", value: (church) => church.status },
-    ]);
+    ], "Super Admin Churches");
   };
 
   if (loading) {
@@ -178,13 +179,7 @@ export default function ChurchesDirectoryPage() {
               <option value="desc">Desc</option>
             </select>
           </div>
-          <button
-            type="button"
-            onClick={exportVisibleRows}
-            className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
-          >
-            Download CSV
-          </button>
+          <TableExportMenu onExport={exportVisibleRows} />
         </div>
       </section>
 

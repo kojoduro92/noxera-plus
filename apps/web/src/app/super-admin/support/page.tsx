@@ -2,9 +2,10 @@
 
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { PaginatedResponse, SupportTicketRow } from "@/lib/super-admin-types";
-import { downloadRowsAsCsv } from "@/lib/export-utils";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 const TICKET_STATUSES = ["Open", "Pending Engineer", "Resolved", "Closed"] as const;
 const TICKET_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
@@ -183,15 +184,15 @@ export default function SupportTicketsPage() {
     return next;
   }, [data.items, sortBy, sortDirection]);
 
-  const exportRows = () => {
-    downloadRowsAsCsv("super-admin-support-tickets.csv", sortedItems, [
+  const exportRows = async (format: ExportFormat) => {
+    await downloadRows(format, "super-admin-support-tickets", sortedItems, [
       { label: "Subject", value: (row) => row.subject },
       { label: "Tenant", value: (row) => row.tenant?.name ?? row.tenantId },
       { label: "Status", value: (row) => row.status },
       { label: "Priority", value: (row) => row.priority },
       { label: "Assigned To", value: (row) => row.assignedTo ?? "" },
       { label: "Updated", value: (row) => new Date(row.updatedAt).toLocaleString() },
-    ]);
+    ], "Super Admin Support Tickets");
   };
 
   return (
@@ -305,13 +306,7 @@ export default function SupportTicketsPage() {
               <option value="desc">Desc</option>
               <option value="asc">Asc</option>
             </select>
-            <button
-              type="button"
-              onClick={exportRows}
-              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100"
-            >
-              CSV
-            </button>
+            <TableExportMenu onExport={exportRows} label="Export" />
           </div>
         </div>
       </div>

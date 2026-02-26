@@ -3,6 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type GivingRow = {
   id: string;
@@ -31,35 +33,6 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
-}
-
-function toCsv(rows: GivingRow[]) {
-  const lines = ["Date,Donor,Fund,Method,Status,Amount"];
-  rows.forEach((row) => {
-    const donor = row.member ? `${row.member.firstName} ${row.member.lastName}` : row.donorName || "Anonymous";
-    const escaped = [
-      new Date(row.transactionDate).toISOString(),
-      donor,
-      row.fund,
-      row.method,
-      row.status,
-      row.amount.toFixed(2),
-    ].map((value) => `"${String(value).replace(/"/g, '""')}"`);
-    lines.push(escaped.join(","));
-  });
-  return lines.join("\n");
-}
-
-function downloadCsv(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 export default function GivingPage() {
@@ -169,10 +142,16 @@ export default function GivingPage() {
     }
   };
 
-  const exportFiltered = () => {
-    const payload = toCsv(filteredRecords);
+  const exportFiltered = async (format: ExportFormat) => {
     const fileDate = new Date().toISOString().slice(0, 10);
-    downloadCsv(`giving-${fileDate}.csv`, payload);
+    await downloadRows(format, `giving-${fileDate}`, filteredRecords, [
+      { label: "Date", value: (row) => new Date(row.transactionDate).toISOString() },
+      { label: "Donor", value: (row) => (row.member ? `${row.member.firstName} ${row.member.lastName}` : row.donorName || "Anonymous") },
+      { label: "Fund", value: (row) => row.fund },
+      { label: "Method", value: (row) => row.method },
+      { label: "Status", value: (row) => row.status },
+      { label: "Amount", value: (row) => row.amount.toFixed(2) },
+    ], "Giving Transactions");
   };
 
   return (
@@ -285,14 +264,7 @@ export default function GivingPage() {
               >
                 Reset
               </button>
-              <button
-                type="button"
-                onClick={exportFiltered}
-                disabled={filteredRecords.length === 0}
-                className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Export CSV
-              </button>
+              <TableExportMenu onExport={exportFiltered} label="Export" />
             </div>
           </div>
         </section>

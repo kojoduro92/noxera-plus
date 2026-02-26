@@ -9,6 +9,8 @@ type PlatformPersonalization = {
   defaultCountry: string;
   defaultLanguage: string;
   logoUrl: string;
+  faviconUrl: string;
+  themeMode: "light" | "dark" | "system";
   brandPrimaryColor: string;
   brandAccentColor: string;
 };
@@ -30,9 +32,11 @@ const defaultPersonalization: PlatformPersonalization = {
   defaultCurrency: "USD",
   defaultCountry: "US",
   defaultLanguage: "en",
-  logoUrl: "",
-  brandPrimaryColor: "#4f46e5",
-  brandAccentColor: "#22c55e",
+  logoUrl: "/brand-logo.png",
+  faviconUrl: "/brand-favicon.png",
+  themeMode: "system",
+  brandPrimaryColor: "#d62f9d",
+  brandAccentColor: "#0bb9f4",
 };
 
 const PlatformPersonalizationContext = createContext<PlatformPersonalizationContextValue | undefined>(undefined);
@@ -53,13 +57,18 @@ function hexToRgbTuple(hex: string) {
 }
 
 function normalizeProfile(profile: PlatformProfilePayload): PlatformPersonalization {
+  const normalizedTheme = profile.themeMode?.trim().toLowerCase();
+  const themeMode = normalizedTheme === "dark" || normalizedTheme === "light" ? normalizedTheme : "system";
+
   return {
     orgName: profile.orgName?.trim() || defaultPersonalization.orgName,
     defaultLocale: profile.defaultLocale?.trim() || defaultPersonalization.defaultLocale,
     defaultCurrency: profile.defaultCurrency?.trim().toUpperCase() || defaultPersonalization.defaultCurrency,
     defaultCountry: profile.defaultCountry?.trim().toUpperCase() || defaultPersonalization.defaultCountry,
     defaultLanguage: profile.defaultLanguage?.trim().toLowerCase() || defaultPersonalization.defaultLanguage,
-    logoUrl: profile.logoUrl?.trim() || "",
+    logoUrl: profile.logoUrl?.trim() || defaultPersonalization.logoUrl,
+    faviconUrl: profile.faviconUrl?.trim() || defaultPersonalization.faviconUrl,
+    themeMode,
     brandPrimaryColor: sanitizeHexColor(profile.brandPrimaryColor, defaultPersonalization.brandPrimaryColor),
     brandAccentColor: sanitizeHexColor(profile.brandAccentColor, defaultPersonalization.brandAccentColor),
   };

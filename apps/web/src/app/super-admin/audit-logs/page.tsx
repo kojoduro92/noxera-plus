@@ -2,9 +2,10 @@
 
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { AuditLogRow, PaginatedResponse } from "@/lib/super-admin-types";
-import { downloadRowsAsCsv } from "@/lib/export-utils";
+import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type AuditFilters = {
   search: string;
@@ -119,14 +120,14 @@ export default function AuditLogsPage() {
     return next;
   }, [data.items, sortBy, sortDirection]);
 
-  const exportRows = () => {
-    downloadRowsAsCsv("super-admin-audit-logs.csv", sortedItems, [
+  const exportRows = async (format: ExportFormat) => {
+    await downloadRows(format, "super-admin-audit-logs", sortedItems, [
       { label: "Timestamp", value: (row) => new Date(row.createdAt).toLocaleString() },
       { label: "Tenant", value: (row) => row.tenant?.name ?? "Unknown tenant" },
       { label: "Actor", value: (row) => row.user?.email ?? row.user?.name ?? "System" },
       { label: "Action", value: (row) => row.action },
       { label: "Resource", value: (row) => row.resource },
-    ]);
+    ], "Super Admin Audit Logs");
   };
 
   return (
@@ -203,13 +204,7 @@ export default function AuditLogsPage() {
             <option value="desc">Desc</option>
             <option value="asc">Asc</option>
           </select>
-          <button
-            type="button"
-            onClick={exportRows}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          >
-            Download CSV
-          </button>
+          <TableExportMenu onExport={exportRows} />
           <button
             type="button"
             onClick={applyFilters}
