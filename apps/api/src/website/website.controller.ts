@@ -32,4 +32,5 @@ export class WebsiteController {
   async addSection(@Req() request: RequestWithAuth, @Param('id') id: string, @Body() data: { type: string; content: any; order: number }) {
     return this.websiteService.addSection(request.authContext!.tenantId!, id, data);
   }
+
 }

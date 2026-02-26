@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/platform-options";
 import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 
 type BillingListResponse = PaginatedResponse<BillingTenantRow> & {
@@ -19,12 +19,26 @@ type BillingListResponse = PaginatedResponse<BillingTenantRow> & {
 const BILLING_STATUSES = ["Active", "Past Due", "Suspended", "Cancelled"] as const;
 type SortOption = "tenant" | "status" | "plan" | "created";
 
+type CouponRow = {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  expiryDate?: string | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  isActive: boolean;
+};
+
+type CouponsResponse = PaginatedResponse<CouponRow>;
+
 export default function BillingPlansPage() {
   const { personalization } = usePlatformPersonalization();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
+  const [activeTab, setActiveTab] = useState<"subscriptions" | "coupons">("subscriptions");
   const page = Math.max(1, Number(searchParams.get("page") || "1"));
   const status = searchParams.get("status") || "";
   const search = searchParams.get("search") || "";
@@ -42,6 +56,17 @@ export default function BillingPlansPage() {
     summary: { mrr: 0, activeSubscriptions: 0 },
   });
   const [loading, setLoading] = useState(true);
+  const [coupons, setCoupons] = useState<CouponsResponse>({ items: [], page: 1, limit: 25, total: 0 });
+  const [couponCreating, setCouponCreating] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [couponForm, setCouponForm] = useState({
+    code: "",
+    discountType: "PERCENTAGE",
+    discountValue: 0,
+    expiryDate: "",
+    usageLimit: 0,
+  });
+
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState<string | null>(null);
@@ -82,10 +107,65 @@ export default function BillingPlansPage() {
     }
   }, [queryString]);
 
+  const loadCoupons = useCallback(async () => {
+    try {
+      setCouponError("");
+      const response = await apiFetch<CouponsResponse>(`/api/super-admin/billing/coupons?page=${page}&limit=25`);
+      setCoupons(response);
+    } catch (err) {
+      setCouponError((err as { message?: string })?.message ?? "Unable to load coupons.");
+    }
+  }, [page]);
+
   useEffect(() => {
     setLoading(true);
-    void loadData().finally(() => setLoading(false));
-  }, [loadData]);
+    if (activeTab === "subscriptions") {
+      void loadData().finally(() => setLoading(false));
+    } else {
+      void loadCoupons().finally(() => setLoading(false));
+    }
+  }, [activeTab, loadCoupons, loadData]);
+
+  const createCoupon = async (event: FormEvent) => {
+    event.preventDefault();
+    setCouponCreating(true);
+    setCouponError("");
+    try {
+      await apiFetch("/api/super-admin/billing/coupons", {
+        method: "POST",
+        ...withJsonBody({
+          ...couponForm,
+          usageLimit: couponForm.usageLimit || null,
+        }),
+      });
+      setNotice("Coupon created successfully.");
+      setCouponForm({ code: "", discountType: "PERCENTAGE", discountValue: 0, expiryDate: "", usageLimit: 0 });
+      void loadCoupons();
+    } catch (err) {
+      setCouponError((err as { message?: string })?.message ?? "Failed to create coupon.");
+    } finally {
+      setCouponCreating(false);
+    }
+  };
+
+  const toggleCoupon = async (id: string) => {
+    try {
+      await apiFetch(`/api/super-admin/billing/coupons/${id}/active`, { method: "PATCH" });
+      void loadCoupons();
+    } catch (err) {
+      setCouponError((err as { message?: string })?.message ?? "Failed to update coupon.");
+    }
+  };
+
+  const deleteCoupon = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this coupon?")) return;
+    try {
+      await apiFetch(`/api/super-admin/billing/coupons/${id}`, { method: "DELETE" });
+      void loadCoupons();
+    } catch (err) {
+      setCouponError((err as { message?: string })?.message ?? "Failed to delete coupon.");
+    }
+  };
 
   const applyFilters = () => {
     const params = new URLSearchParams();
@@ -171,6 +251,33 @@ export default function BillingPlansPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setActiveTab("subscriptions")}
+          className={`flex-1 rounded-xl px-4 py-3 text-sm font-black uppercase tracking-wider transition ${
+            activeTab === "subscriptions"
+              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          }`}
+        >
+          Tenant Subscriptions
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("coupons")}
+          className={`flex-1 rounded-xl px-4 py-3 text-sm font-black uppercase tracking-wider transition ${
+            activeTab === "coupons"
+              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          }`}
+        >
+          Coupon Management
+        </button>
+      </div>
+
+      {activeTab === "subscriptions" ? (
+        <>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Subscriptions</p>
@@ -279,10 +386,10 @@ export default function BillingPlansPage() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Tenant</th>
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Plan</th>
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Created</th>
+                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Tenant</th>
+                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Plan</th>
+                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Created</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -312,11 +419,11 @@ export default function BillingPlansPage() {
               ) : (
                 sortedItems.map((tenant) => (
                   <tr key={tenant.id}>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <p className="text-sm font-semibold text-slate-900">{tenant.name}</p>
                       <p className="text-xs text-slate-500">{tenant.domain ? `${tenant.domain}.noxera.plus` : "No domain"}</p>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <select
                         value={tenant.plan?.id || ""}
                         onChange={(event) => void updateTenantPlan(tenant.id, event.target.value)}
@@ -345,7 +452,7 @@ export default function BillingPlansPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{new Date(tenant.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{new Date(tenant.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))
               )}
@@ -377,6 +484,133 @@ export default function BillingPlansPage() {
           </div>
         </div>
       </div>
+      </>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
+            <form onSubmit={createCoupon} className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-black text-slate-900">Create New Coupon</h3>
+              <div className="mt-4 space-y-3">
+                <label className="block space-y-1">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500">Coupon Code</span>
+                  <input
+                    value={couponForm.code}
+                    onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value })}
+                    placeholder="e.g. WELCOME50"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    required
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block space-y-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">Type</span>
+                    <select
+                      value={couponForm.discountType}
+                      onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none"
+                    >
+                      <option value="PERCENTAGE">Percentage (%)</option>
+                      <option value="FIXED">Fixed Amount</option>
+                    </select>
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">Value</span>
+                    <input
+                      type="number"
+                      value={couponForm.discountValue}
+                      onChange={(e) => setCouponForm({ ...couponForm, discountValue: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none"
+                      required
+                    />
+                  </label>
+                </div>
+                <label className="block space-y-1">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500">Expiry Date (Optional)</span>
+                  <input
+                    type="date"
+                    value={couponForm.expiryDate}
+                    onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500">Usage Limit (Optional)</span>
+                  <input
+                    type="number"
+                    value={couponForm.usageLimit}
+                    onChange={(e) => setCouponForm({ ...couponForm, usageLimit: Number(e.target.value) })}
+                    placeholder="0 for unlimited"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={couponCreating}
+                  className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-black uppercase tracking-wider text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {couponCreating ? "Creating..." : "Create Coupon"}
+                </button>
+              </div>
+            </form>
+
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Code</th>
+                      <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Discount</th>
+                      <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Usage</th>
+                      <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Status</th>
+                      <th className="px-5 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i}><td colSpan={5} className="px-5 py-4"><div className="h-6 w-full animate-pulse rounded bg-slate-100" /></td></tr>
+                      ))
+                    ) : coupons.items.length === 0 ? (
+                      <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-slate-500">No coupons found.</td></tr>
+                    ) : (
+                      coupons.items.map((coupon) => (
+                        <tr key={coupon.id} className="hover:bg-slate-50/50 transition">
+                          <td className="px-5 py-4 whitespace-nowrap font-black text-indigo-600">{coupon.code}</td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className="text-sm font-bold text-slate-900">
+                              {coupon.discountType === "PERCENTAGE" ? `${coupon.discountValue}%` : formatMoney(coupon.discountValue, personalization.defaultCurrency, personalization.defaultLocale)}
+                            </span>
+                            <p className="text-[10px] text-slate-500 font-semibold uppercase">Off total price</p>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <p className="text-sm font-bold text-slate-700">{coupon.usageCount} / {coupon.usageLimit || "∞"}</p>
+                            <p className="text-[10px] text-slate-500 font-semibold uppercase">Redemptions</p>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${coupon.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                              {coupon.isActive ? "Active" : "Disabled"}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right whitespace-nowrap">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => void toggleCoupon(coupon.id)} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+                                {coupon.isActive ? "Disable" : "Enable"}
+                              </button>
+                              <button onClick={() => void deleteCoupon(coupon.id)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition">
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

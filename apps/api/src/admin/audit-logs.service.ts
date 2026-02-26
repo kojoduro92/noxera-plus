@@ -63,6 +63,43 @@ export class AuditLogsService {
     return this.listAuditLogs({ ...filters, tenantId });
   }
 
+  async listImpersonationLogs(filters: Pick<AuditLogFilters, 'page' | 'limit' | 'search'>) {
+    const pagination = getPagination(filters);
+    const search = typeof filters.search === 'string' ? filters.search.trim() : '';
+
+    const where: Prisma.AuditLogWhereInput = {
+      action: { startsWith: 'IMPERSONATION_', mode: 'insensitive' },
+    };
+
+    if (search) {
+      where.OR = [
+        { tenant: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        { details: { path: ['superAdminEmail'], string_contains: search } },
+      ];
+    }
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.auditLog.count({ where }),
+      this.prisma.auditLog.findMany({
+        where,
+        skip: pagination.skip,
+        take: pagination.take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          tenant: { select: { id: true, name: true, domain: true } },
+          user: { select: { id: true, name: true, email: true } },
+        },
+      }),
+    ]);
+
+    return {
+      items,
+      page: pagination.page,
+      limit: pagination.limit,
+      total,
+    };
+  }
+
   private buildWhere(filters: AuditLogFilters): Prisma.AuditLogWhereInput {
     const where: Prisma.AuditLogWhereInput = {};
 

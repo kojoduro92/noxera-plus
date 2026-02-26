@@ -195,21 +195,22 @@ export default function ChurchesDirectoryPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Church</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Owner</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Domain</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Plan</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Branches</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Users</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Roles</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
-              <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500">Actions</th>
-            </tr>
-          </thead>
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Church</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Owner</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Domain</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Plan</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Branches</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Users</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Roles</th>
+                <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Status</th>
+                <th className="px-4 py-4 text-right text-xs font-black uppercase tracking-wider text-slate-500 whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredChurches.length === 0 ? (
               <tr>
@@ -221,29 +222,33 @@ export default function ChurchesDirectoryPage() {
               filteredChurches.map((church) => (
                 <React.Fragment key={church.id}>
                   <tr className="hover:bg-slate-50/80">
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <Link href={`/super-admin/churches/${church.id}`} className="text-sm font-black text-slate-900 hover:text-indigo-600">
                         {church.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <p className="text-xs font-black text-slate-800">{church.ownerName || "Church Owner"}</p>
                       <p className="text-xs font-medium text-slate-500">{church.ownerEmail || "Not assigned"}</p>
                     </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-slate-700">{church.domain}.noxera.plus</td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
+                      {church.domain}.noxera.plus
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700">
                         {church.plan?.name || "Trial"}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-slate-700">
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
                       {church.activeBranchCount ?? 0}/{church.branchCount ?? 0}
                     </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-slate-700">
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
                       {church.activeUserCount ?? 0}/{church.userCount ?? 0}
                     </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-slate-700">{church.roleCount ?? 0}</td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
+                      {church.roleCount ?? 0}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wider ${
                           church.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
@@ -252,7 +257,7 @@ export default function ChurchesDirectoryPage() {
                         {church.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-right">
+                    <td className="px-4 py-4 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-2">
                         <Link
                           href={`/super-admin/churches/${church.id}`}
@@ -317,8 +322,9 @@ export default function ChurchesDirectoryPage() {
                 </React.Fragment>
               ))
             )}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <ConfirmActionModal

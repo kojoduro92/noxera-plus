@@ -775,6 +775,29 @@ export class TenantsService {
     });
   }
 
+  async getActivationFunnel() {
+    const total = await this.prisma.tenant.count();
+    
+    const [withActiveUser, withMembers, withServices] = await Promise.all([
+      this.prisma.tenant.count({
+        where: { users: { some: { status: 'Active' } } },
+      }),
+      this.prisma.tenant.count({
+        where: { members: { some: {} } },
+      }),
+      this.prisma.tenant.count({
+        where: { services: { some: {} } },
+      }),
+    ]);
+
+    return [
+      { step: 'Signups', count: total, color: '#6366f1' },
+      { step: 'Active Owners', count: withActiveUser, color: '#8b5cf6' },
+      { step: 'Added Members', count: withMembers, color: '#ec4899' },
+      { step: 'Recorded Services', count: withServices, color: '#f59e0b' },
+    ];
+  }
+
   private async assertTenantExists(tenantId: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

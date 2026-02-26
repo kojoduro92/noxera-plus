@@ -271,6 +271,19 @@ export default function SuperAdminLayout({
       .join("");
     return letters || "SA";
   }, [sessionEmail]);
+
+  // Handle keyboard shortcut for search focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && (e.target as HTMLElement).tagName !== "INPUT") {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        searchInput?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   const primaryColor = normalizeHexColor(personalization.brandPrimaryColor, "#7c3aed");
   const accentColor = normalizeHexColor(personalization.brandAccentColor, "#06b6d4");
   const sidebarStartColor = blendHexColors(primaryColor, "#0f172a", 0.78);

@@ -97,4 +97,24 @@ export class WebsiteService {
       },
     });
   }
+
+  async getWebsiteByDomain(domain: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { domain },
+      select: { id: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException('Church not found');
+    }
+
+    return this.prisma.website.findUnique({
+      where: { tenantId: tenant.id },
+      include: {
+        pages: {
+          where: { isPublished: true },
+          include: { sections: { orderBy: { order: 'asc' } } },
+        },
+      },
+    });
+  }
 }

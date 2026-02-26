@@ -37,6 +37,15 @@ export class AuditLogsController {
     return this.auditLogsService.listAuditLogsByTenant(tenantId, { page, limit });
   }
 
+  @Get('platform/impersonation')
+  async getImpersonationLogs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.auditLogsService.listImpersonationLogs({ page, limit, search });
+  }
+
   @Get(':id')
   async getAuditLogById(@Param('id') id: string) {
     return this.auditLogsService.getAuditLogById(id);

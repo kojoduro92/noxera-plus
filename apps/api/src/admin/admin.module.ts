@@ -5,6 +5,8 @@ import { AuditLogsController } from './audit-logs.controller';
 import { AuditLogsService } from './audit-logs.service';
 import { BillingController } from './billing.controller';
 import { BillingService } from './billing.service';
+import { CouponsController } from './coupons.controller';
+import { CouponsService } from './coupons.service';
 import { PlatformController } from './platform.controller';
 import { PlatformSettingsController } from './platform-settings.controller';
 import { PlatformSettingsService } from './platform-settings.service';
@@ -17,7 +19,15 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [AuthModule, PrismaModule, UsersModule, RolesModule, NotificationsModule],
-  controllers: [AuditLogsController, BillingController, SupportController, PlatformController, PlatformSettingsController, PublicPlatformController],
-  providers: [AuditLogsService, BillingService, SupportService, PlatformSettingsService],
+  controllers: [
+    AuditLogsController,
+    BillingController,
+    CouponsController,
+    SupportController,
+    PlatformController,
+    PlatformSettingsController,
+    PublicPlatformController,
+  ],
+  providers: [AuditLogsService, BillingService, CouponsService, SupportService, PlatformSettingsService],
 })
 export class AdminModule {}

@@ -29,6 +29,11 @@ export class TenantsController {
     return this.tenantsService.getPlatformMetrics();
   }
 
+  @Get('platform/activation-funnel')
+  async getActivationFunnel() {
+    return this.tenantsService.getActivationFunnel();
+  }
+
   @Post(':id/impersonate')
   async impersonateTenant(@Param('id') id: string, @Req() request: RequestWithAuth) {
     const tenant = await this.tenantsService.getTenantById(id);

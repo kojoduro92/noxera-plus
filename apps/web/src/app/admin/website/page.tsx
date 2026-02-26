@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 
@@ -208,9 +209,26 @@ export default function WebsiteBuilderPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-900 to-violet-700 p-6 text-white shadow-lg shadow-indigo-900/20">
-        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-200">Website Builder</p>
-        <h2 className="mt-2 text-2xl font-black">Manage church site branding, pages, and sections from real tenant data.</h2>
-        <p className="mt-2 max-w-3xl text-sm text-indigo-100">Use publish controls to release pages and keep a rollback path for theme draft edits.</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-200">Website Builder</p>
+            <h2 className="mt-2 text-2xl font-black">Manage church site branding, pages, and sections from real tenant data.</h2>
+            <p className="mt-2 max-w-3xl text-sm text-indigo-100">Use publish controls to release pages and keep a rollback path for theme draft edits.</p>
+          </div>
+          {website?.tenantId && (
+            <button
+              onClick={() => {
+                // Determine subdomain from current domain (e.g. grace.noxera.plus -> grace)
+                const host = window.location.hostname;
+                const subdomain = host.split('.')[0];
+                window.open(`/${subdomain}`, '_blank');
+              }}
+              className="rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-widest text-indigo-900 shadow-xl transition hover:scale-105 active:scale-95"
+            >
+              Preview Live Site
+            </button>
+          )}
+        </div>
       </section>
 
       {(error || notice) && (
@@ -298,20 +316,115 @@ export default function WebsiteBuilderPage() {
                     </button>
                   </div>
 
-                  <form onSubmit={addSection} className="rounded-lg border border-slate-200 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-500">Add Section</p>
-                    <div className="mt-3 grid gap-3">
-                      <select value={sectionType} onChange={(event) => setSectionType(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        <option value="hero">Hero</option>
-                        <option value="content">Content</option>
-                        <option value="grid">Grid</option>
-                        <option value="form">Form</option>
-                      </select>
-                      <input value={sectionOrder} onChange={(event) => setSectionOrder(event.target.value)} placeholder="Order" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <textarea value={sectionContent} onChange={(event) => setSectionContent(event.target.value)} rows={4} className="rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs" />
+                  <form onSubmit={addSection} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Add New Page Section</h4>
+                    <div className="mt-4 grid gap-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="space-y-1">
+                          <span className="text-[10px] font-black uppercase text-slate-500">Section Type</span>
+                          <select
+                            value={sectionType}
+                            onChange={(event) => {
+                              setSectionType(event.target.value);
+                              // Set default content for type
+                              if (event.target.value === "hero") setSectionContent('{"title":"Welcome","subtitle":"Join us this Sunday","buttonText":"Learn More"}');
+                              else if (event.target.value === "content") setSectionContent('{"body":"Write your content here..."}');
+                              else if (event.target.value === "grid") setSectionContent('{"items":[{"title":"Item 1","desc":"Description"}]}');
+                              else if (event.target.value === "form") setSectionContent('{"formId":"contact","title":"Get in touch"}');
+                            }}
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-100"
+                          >
+                            <option value="hero">Hero Header</option>
+                            <option value="content">Content Block</option>
+                            <option value="grid">Features Grid</option>
+                            <option value="form">Inquiry Form</option>
+                          </select>
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-[10px] font-black uppercase text-slate-500">Display Order</span>
+                          <input
+                            type="number"
+                            value={sectionOrder}
+                            onChange={(event) => setSectionOrder(event.target.value)}
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-100"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                        <p className="text-[10px] font-black uppercase text-slate-500 mb-3 tracking-widest">Section Data Editor</p>
+                        {sectionType === "hero" ? (
+                          <div className="space-y-3">
+                            <input
+                              placeholder="Hero Title"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold"
+                              onChange={(e) => {
+                                try {
+                                  const current = JSON.parse(sectionContent);
+                                  setSectionContent(JSON.stringify({ ...current, title: e.target.value }));
+                                } catch {
+                                  setSectionContent(JSON.stringify({ title: e.target.value }));
+                                }
+                              }}
+                            />
+                            <textarea
+                              placeholder="Subtitle / CTA Text"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
+                              onChange={(e) => {
+                                try {
+                                  const current = JSON.parse(sectionContent);
+                                  setSectionContent(JSON.stringify({ ...current, subtitle: e.target.value }));
+                                } catch {
+                                  setSectionContent(JSON.stringify({ subtitle: e.target.value }));
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : sectionType === "content" ? (
+                          <div className="space-y-3">
+                            <input
+                              placeholder="Block Title"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold"
+                              onChange={(e) => {
+                                try {
+                                  const current = JSON.parse(sectionContent);
+                                  setSectionContent(JSON.stringify({ ...current, title: e.target.value }));
+                                } catch {
+                                  setSectionContent(JSON.stringify({ title: e.target.value }));
+                                }
+                              }}
+                            />
+                            <textarea
+                              placeholder="Main Body Text"
+                              rows={5}
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
+                              onChange={(e) => {
+                                try {
+                                  const current = JSON.parse(sectionContent);
+                                  setSectionContent(JSON.stringify({ ...current, body: e.target.value }));
+                                } catch {
+                                  setSectionContent(JSON.stringify({ body: e.target.value }));
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <textarea
+                            value={sectionContent}
+                            onChange={(event) => setSectionContent(event.target.value)}
+                            rows={5}
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-[10px] text-slate-600 outline-none"
+                          />
+                        )}
+                        <p className="mt-2 text-[10px] font-medium text-slate-400 italic text-center">Highly structured visual editors for each block type are coming in Phase 2.</p>
+                      </div>
                     </div>
-                    <button type="submit" disabled={addingSection} className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-slate-700 disabled:opacity-60">
-                      {addingSection ? "Adding..." : "Add Section"}
+                    <button
+                      type="submit"
+                      disabled={addingSection}
+                      className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-500 disabled:opacity-60"
+                    >
+                      {addingSection ? "Saving Section..." : "Confirm & Add Section"}
                     </button>
                   </form>
 

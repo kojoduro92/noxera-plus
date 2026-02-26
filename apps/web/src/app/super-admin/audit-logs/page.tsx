@@ -6,6 +6,7 @@ import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { AuditDetailModal } from "@/components/super-admin/audit-detail-modal";
 
 type AuditFilters = {
   search: string;
@@ -60,6 +61,7 @@ export default function AuditLogsPage() {
   const [error, setError] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("timestamp");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [selectedLog, setSelectedLog] = useState<AuditLogRow | null>(null);
 
   useEffect(() => {
     setDraftFilters(activeFilters);
@@ -266,14 +268,18 @@ export default function AuditLogsPage() {
                 </tr>
               ) : (
                 sortedItems.map((log) => (
-                  <tr key={log.id}>
-                    <td className="px-5 py-4 text-sm text-slate-600">{new Date(log.createdAt).toLocaleString()}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-900">{log.tenant?.name ?? "Unknown tenant"}</td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{log.user?.email ?? log.user?.name ?? "System"}</td>
-                    <td className="px-5 py-4 text-sm">
+                  <tr
+                    key={log.id}
+                    className="hover:bg-slate-50/80 cursor-pointer transition"
+                    onClick={() => setSelectedLog(log)}
+                  >
+                    <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+                    <td className="px-5 py-4 text-sm font-semibold text-slate-900 whitespace-nowrap">{log.tenant?.name ?? "Unknown tenant"}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{log.user?.email ?? log.user?.name ?? "System"}</td>
+                    <td className="px-5 py-4 text-sm whitespace-nowrap">
                       <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{log.action}</span>
                     </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{log.resource}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{log.resource}</td>
                   </tr>
                 ))
               )}
@@ -305,6 +311,12 @@ export default function AuditLogsPage() {
           </div>
         </div>
       </div>
+
+      <AuditDetailModal
+        open={Boolean(selectedLog)}
+        log={selectedLog}
+        onClose={() => setSelectedLog(null)}
+      />
     </div>
   );
 }

@@ -63,3 +63,15 @@ export type SupportTicketRow = {
     status?: string | null;
   } | null;
 };
+
+export type CouponRow = {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  expiryDate?: string | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  isActive: boolean;
+  createdAt: string;
+};
