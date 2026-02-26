@@ -1,0 +1,316 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String?  @unique
+  planId    String?
+  status    String   @default("Active")
+  features  String[] // feature toggles for early access/add-ons
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plan        Plan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  users       User[]
+  roles       Role[]
+  auditLogs   AuditLog[]
+  members     Member[]
+  services    Service[]
+  attendances Attendance[]
+  giving      GivingTransaction[]
+  groups      Group[]
+  events      Event[]
+  followUps   FollowUp[]
+  messages    Message[]
+  supportTickets SupportTicket[]
+  branches    Branch[]
+  website     Website?
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users      User[]
+  members    Member[]
+  services   Service[]
+  attendances Attendance[]
+  giving     GivingTransaction[]
+  groups     Group[]
+  events     Event[]
+  followUps  FollowUp[]
+  messages   Message[]
+}
+
+
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  price       Float    @default(0)
+  limits      Json?    // e.g. {"members": 500, "storage_gb": 5}
+  modules     String[] // e.g. ["members", "giving_manual"]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenants Tenant[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String?  // Made nullable for Super Admins
+  branchId     String?
+  email        String   @unique
+  name         String
+  roleId       String?
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  role      Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  auditLogs AuditLog[]
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  permissions String[] // e.g. ["members.view.any", "members.edit.any"]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users  User[]
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String?
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Member {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  status    String   @default("Active")
+  tags      String[] // e.g. ["Youth", "Choir", "FirstTimer"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch?             @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  attendances Attendance[]
+  giving      GivingTransaction[]
+  groupMembers GroupMember[]
+  followUps   FollowUp[]
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  name        String
+  type        String   // e.g. "Ministry", "CellGroup", "Department"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch  Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  members GroupMember[]
+}
+
+model GroupMember {
+  id        String   @id @default(uuid())
+  groupId   String
+  memberId  String
+  role      String   @default("Member") // e.g. "Leader", "Member"
+  joinedAt  DateTime @default(now())
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  @@unique([groupId, memberId])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+}
+
+model FollowUp {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  memberId    String
+  assignedTo  String?  // UserId
+  type        String   // e.g. "FirstTimeVisitor", "Absentee", "Care"
+  status      String   @default("Pending") // "Pending", "In Progress", "Completed"
+  notes       String?
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  type      String   // e.g. "SMS" or "EMAIL"
+  audience  String   // e.g. "All Members", "Leaders", or JSON array of tags
+  subject   String?  // For emails
+  body      String
+  status    String   @default("Draft") // "Draft", "Sent", "Failed"
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+}
+
+model SupportTicket {
+  id          String   @id @default(uuid())
+  tenantId    String
+  subject     String
+  description String
+  status      String   @default("Open")
+  priority    String   @default("Medium")
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, priority])
+}
+
+model Website {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique
+  themeConfig   Json?    // { primaryColor, font, logoUrl, etc. }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pages         Page[]
+}
+
+model Page {
+  id            String   @id @default(uuid())
+  websiteId     String
+  slug          String   // e.g. "about", "contact"
+  title         String
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  sections      Section[]
+
+  @@unique([websiteId, slug])
+}
+
+model Section {
+  id            String   @id @default(uuid())
+  pageId        String
+  type          String   // e.g. "hero", "grid", "content", "form"
+  order         Int      @default(0)
+  content       Json?    // Data specific to the section type
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  name      String
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  attendances Attendance[]
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  serviceId String
+  memberId  String?
+  visitorId String?
+  method    String   @default("manual")
+  createdAt DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch  Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  member  Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+}
+
+model GivingTransaction {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  memberId        String?
+  amount          Float
+  fund            String   // e.g. "Tithe", "Offering", "Building Fund"
+  method          String   // e.g. "Cash", "Check", "Card", "Transfer", "Online"
+  donorName       String?  // For anonymous or non-member donations
+  transactionDate DateTime @default(now())
+  paymentGateway  String?  // e.g. "Stripe", "Paystack"
+  transactionId   String?  @unique // ID from the payment gateway
+  status          String   @default("Completed") // e.g. "Completed", "Pending", "Failed"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch  Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  member  Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+}
