@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { resolveFontStack } from "@/lib/platform-options";
 
 type PlatformPersonalization = {
   orgName: string;
@@ -13,6 +14,7 @@ type PlatformPersonalization = {
   themeMode: "light" | "dark" | "system";
   brandPrimaryColor: string;
   brandAccentColor: string;
+  baseFontFamily: string;
 };
 
 type PlatformProfilePayload = Partial<PlatformPersonalization>;
@@ -37,6 +39,7 @@ const defaultPersonalization: PlatformPersonalization = {
   themeMode: "system",
   brandPrimaryColor: "#d62f9d",
   brandAccentColor: "#0bb9f4",
+  baseFontFamily: "inter",
 };
 
 const PlatformPersonalizationContext = createContext<PlatformPersonalizationContextValue | undefined>(undefined);
@@ -71,6 +74,7 @@ function normalizeProfile(profile: PlatformProfilePayload): PlatformPersonalizat
     themeMode,
     brandPrimaryColor: sanitizeHexColor(profile.brandPrimaryColor, defaultPersonalization.brandPrimaryColor),
     brandAccentColor: sanitizeHexColor(profile.brandAccentColor, defaultPersonalization.brandAccentColor),
+    baseFontFamily: profile.baseFontFamily?.trim().toLowerCase() || defaultPersonalization.baseFontFamily,
   };
 }
 
@@ -82,6 +86,7 @@ function applyBrandVariables(profile: PlatformPersonalization) {
   root.style.setProperty("--brand-accent", profile.brandAccentColor);
   root.style.setProperty("--brand-primary-rgb", hexToRgbTuple(profile.brandPrimaryColor));
   root.style.setProperty("--brand-accent-rgb", hexToRgbTuple(profile.brandAccentColor));
+  root.style.setProperty("--app-font-family", resolveFontStack(profile.baseFontFamily));
 }
 
 export function PlatformPersonalizationProvider({ children }: { children: React.ReactNode }) {

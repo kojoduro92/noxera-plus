@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
-import { COUNTRY_OPTIONS, CURRENCY_OPTIONS, LANGUAGE_OPTIONS, optionLabel } from "@/lib/platform-options";
+import { COUNTRY_OPTIONS, CURRENCY_OPTIONS, FONT_OPTIONS, LANGUAGE_OPTIONS, optionLabel } from "@/lib/platform-options";
 import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
 
 type PlatformProfile = {
@@ -19,6 +19,7 @@ type PlatformProfile = {
   themeMode?: "light" | "dark" | "system";
   brandPrimaryColor?: string;
   brandAccentColor?: string;
+  baseFontFamily?: string;
   supportedLanguages?: string[];
   supportedCountries?: string[];
   supportedCurrencies?: string[];
@@ -155,6 +156,7 @@ export default function SuperAdminSettingsPage() {
         themeMode: settingsPayload.platformProfile.themeMode ?? "system",
         brandPrimaryColor: sanitizeColor(settingsPayload.platformProfile.brandPrimaryColor ?? "#d62f9d", "#d62f9d"),
         brandAccentColor: sanitizeColor(settingsPayload.platformProfile.brandAccentColor ?? "#0bb9f4", "#0bb9f4"),
+        baseFontFamily: settingsPayload.platformProfile.baseFontFamily ?? "inter",
         supportedLanguages: settingsPayload.platformProfile.supportedLanguages ?? ["en", "fr"],
         supportedCountries: settingsPayload.platformProfile.supportedCountries ?? ["US", "CA", "GB", "FR", "GH", "NG"],
         supportedCurrencies: settingsPayload.platformProfile.supportedCurrencies ?? ["USD", "EUR", "GBP", "CAD", "GHS", "NGN"],
@@ -391,6 +393,27 @@ export default function SuperAdminSettingsPage() {
                       <option value="system">System</option>
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>
+                    </select>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-black uppercase tracking-wider text-slate-500 sm:col-span-2">
+                    Base font family
+                    <select
+                      value={settings.platformProfile.baseFontFamily ?? "inter"}
+                      onChange={(event) => {
+                        const baseFontFamily = event.target.value;
+                        setSettings((current) =>
+                          current ? { ...current, platformProfile: { ...current.platformProfile, baseFontFamily } } : current,
+                        );
+                        setPersonalization({ baseFontFamily });
+                      }}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      {FONT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 </div>
@@ -666,6 +689,7 @@ export default function SuperAdminSettingsPage() {
               <p>Default language: <span className="font-black text-slate-900">{optionLabel(LANGUAGE_OPTIONS, settings.platformProfile.defaultLanguage ?? "en")}</span></p>
               <p>Default country: <span className="font-black text-slate-900">{optionLabel(COUNTRY_OPTIONS, settings.platformProfile.defaultCountry ?? "US")}</span></p>
               <p>Default currency: <span className="font-black text-slate-900">{settings.platformProfile.defaultCurrency}</span></p>
+              <p>Base font: <span className="font-black text-slate-900">{optionLabel(FONT_OPTIONS, settings.platformProfile.baseFontFamily ?? "inter")}</span></p>
             </div>
             <button type="submit" disabled={saving} className="rounded-lg nx-brand-btn px-4 py-2 text-xs font-black uppercase tracking-wider hover:opacity-90 disabled:opacity-60">
               {saving ? "Saving..." : "Save Platform Settings"}

@@ -7,6 +7,9 @@
   --brand-accent: #22c55e;
   --brand-primary-rgb: 79, 70, 229;
   --brand-accent-rgb: 34, 197, 94;
+  --app-font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --app-shell-max-width: 100%;
+  --app-shell-inline-padding: clamp(0.95rem, 1.35vw, 1.75rem);
 }
 
 * {
@@ -23,6 +26,7 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--app-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -41,6 +45,19 @@ body::before {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.nx-shell {
+  width: 100%;
+  max-width: var(--app-shell-max-width);
+  margin-inline: auto;
+  padding-inline: var(--app-shell-inline-padding);
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --app-shell-inline-padding: clamp(1.1rem, 1.5vw, 2rem);
+  }
 }
 
 .nx-brand-btn {
@@ -80,6 +97,13 @@ a {
 
 .nx-console-dark .bg-slate-100 {
   background-color: #0b1220 !important;
+}
+
+.nx-console-dark .shadow-sm,
+.nx-console-dark .shadow,
+.nx-console-dark .shadow-lg,
+.nx-console-dark .shadow-xl {
+  --tw-shadow-color: rgb(2 6 23 / 0.6);
 }
 
 .nx-console-dark .border-slate-100,

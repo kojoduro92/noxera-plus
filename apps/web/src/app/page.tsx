@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { resolveFontStack } from "@/lib/platform-options";
 
 type PublicPlan = {
   name: string;
@@ -23,6 +24,7 @@ type PublicProfile = {
   logoUrl?: string;
   brandPrimaryColor?: string;
   brandAccentColor?: string;
+  baseFontFamily?: string;
 };
 
 const API_BASE_URL = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
@@ -53,6 +55,7 @@ const fallbackProfile: PublicProfile = {
   logoUrl: "/brand-logo.png",
   brandPrimaryColor: "#d62f9d",
   brandAccentColor: "#0bb9f4",
+  baseFontFamily: "inter",
 };
 
 const fallbackMetrics: PublicMetrics = {
@@ -147,6 +150,7 @@ export default async function Home() {
   const brandAccentColor = profile.brandAccentColor || fallbackProfile.brandAccentColor || "#0bb9f4";
   const logoUrl = profile.logoUrl || fallbackProfile.logoUrl || "/brand-logo.png";
   const displayPlans = plans.length > 0 ? plans : fallbackPlans;
+  const baseFontFamily = resolveFontStack(profile.baseFontFamily || fallbackProfile.baseFontFamily);
   const formattedMetrics = [
     { label: "Churches onboarded", value: String(metrics.churchCount) },
     { label: "Active platform users", value: String(metrics.activeUsers) },
@@ -157,9 +161,9 @@ export default async function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-slate-950 text-white" style={{ fontFamily: baseFontFamily }}>
       <section className="relative overflow-hidden border-b border-indigo-900/50 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.30),_rgba(2,6,23,0.98)_55%)]">
-        <div className="mx-auto max-w-6xl px-6 pb-20 pt-8 md:pt-10">
+        <div className="nx-shell pb-20 pt-8 md:pt-10">
           <header className="flex flex-wrap items-center justify-between gap-4">
             <Link
               href="/"
@@ -225,7 +229,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-14">
+      <section className="nx-shell py-14">
         <h2 className="text-2xl font-black tracking-tight">Platform Capabilities</h2>
         <p className="mt-2 max-w-3xl text-sm text-slate-300">Built for real church operations with clean user experience across admin and super-admin portals.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -239,7 +243,7 @@ export default async function Home() {
       </section>
 
       <section className="border-y border-slate-800 bg-slate-900/60">
-        <div className="mx-auto max-w-6xl px-6 py-14">
+        <div className="nx-shell py-14">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-black tracking-tight">Pricing that starts with trial</h2>
@@ -287,7 +291,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-14">
+      <section className="nx-shell py-14">
         <h2 className="text-2xl font-black tracking-tight">Portal Access</h2>
         <p className="mt-2 text-sm text-slate-300">Choose the right entry point based on role.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -312,7 +316,7 @@ export default async function Home() {
       </section>
 
       <section className="border-t border-slate-800">
-        <div className="mx-auto max-w-6xl px-6 py-10 text-xs text-slate-400">
+        <div className="nx-shell py-10 text-xs text-slate-400">
           <div className="mb-3 flex flex-wrap gap-3 text-[11px] font-semibold">
             <Link href="/docs" className="hover:text-slate-200">Docs</Link>
             <Link href="/status" className="hover:text-slate-200">Status</Link>

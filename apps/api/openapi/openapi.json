@@ -97,6 +97,20 @@
         ]
       }
     },
+    "/tenants/platform/activation-funnel": {
+      "get": {
+        "operationId": "TenantsController_getActivationFunnel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
     "/tenants/{id}/impersonate": {
       "post": {
         "operationId": "TenantsController_impersonateTenant",
@@ -1242,6 +1256,43 @@
         ]
       }
     },
+    "/website/templates": {
+      "get": {
+        "operationId": "WebsiteController_getTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/templates/{templateKey}/apply": {
+      "post": {
+        "operationId": "WebsiteController_applyTemplate",
+        "parameters": [
+          {
+            "name": "templateKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
     "/website/theme": {
       "put": {
         "operationId": "WebsiteController_updateTheme",
@@ -1256,7 +1307,45 @@
         ]
       }
     },
+    "/website/seo": {
+      "get": {
+        "operationId": "WebsiteController_getGlobalSeo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      },
+      "put": {
+        "operationId": "WebsiteController_updateGlobalSeo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
     "/website/pages": {
+      "get": {
+        "operationId": "WebsiteController_getPages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      },
       "post": {
         "operationId": "WebsiteController_createPage",
         "parameters": [],
@@ -1313,6 +1402,589 @@
         },
         "tags": [
           "Website"
+        ]
+      }
+    },
+    "/website/pages/{id}/revisions": {
+      "get": {
+        "operationId": "WebsiteController_getPageRevisions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/pages/{id}/draft": {
+      "put": {
+        "operationId": "WebsiteController_savePageDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/pages/{id}/publish": {
+      "post": {
+        "operationId": "WebsiteController_publishPage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/pages/{id}/rollback": {
+      "post": {
+        "operationId": "WebsiteController_rollbackPage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/preview-token": {
+      "post": {
+        "operationId": "WebsiteController_createPreviewToken",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/assets": {
+      "get": {
+        "operationId": "WebsiteController_getAssets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      },
+      "post": {
+        "operationId": "WebsiteController_createAsset",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/assets/{id}": {
+      "delete": {
+        "operationId": "WebsiteController_deleteAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/fragments/validate": {
+      "post": {
+        "operationId": "WebsiteController_validateFragment",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/forms": {
+      "get": {
+        "operationId": "WebsiteController_getForms",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      },
+      "post": {
+        "operationId": "WebsiteController_createForm",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/form-submissions": {
+      "get": {
+        "operationId": "WebsiteController_getFormSubmissions",
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formKey",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/form-submissions/{id}/status": {
+      "put": {
+        "operationId": "WebsiteController_updateFormSubmissionStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/analytics": {
+      "get": {
+        "operationId": "WebsiteController_getAnalytics",
+        "parameters": [
+          {
+            "name": "range",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/verify": {
+      "post": {
+        "operationId": "WebsiteController_verifyDomain",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains": {
+      "get": {
+        "operationId": "WebsiteController_getDomains",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/health": {
+      "get": {
+        "operationId": "WebsiteController_getDomainHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/{id}/check": {
+      "post": {
+        "operationId": "WebsiteController_checkDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/{id}/retry": {
+      "post": {
+        "operationId": "WebsiteController_retryDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/{id}/set-primary": {
+      "post": {
+        "operationId": "WebsiteController_setPrimaryDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/{id}/routing": {
+      "put": {
+        "operationId": "WebsiteController_updateDomainRouting",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/website/domains/{id}": {
+      "delete": {
+        "operationId": "WebsiteController_deleteDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Website"
+        ]
+      }
+    },
+    "/public/website/{domain}": {
+      "get": {
+        "operationId": "PublicWebsiteController_getPublicWebsite",
+        "parameters": [
+          {
+            "name": "domain",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicWebsite"
+        ]
+      }
+    },
+    "/public/website/{domain}/sitemap.xml": {
+      "get": {
+        "operationId": "PublicWebsiteController_getPublicSitemap",
+        "parameters": [
+          {
+            "name": "domain",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicWebsite"
+        ]
+      }
+    },
+    "/public/website/{domain}/robots.txt": {
+      "get": {
+        "operationId": "PublicWebsiteController_getPublicRobots",
+        "parameters": [
+          {
+            "name": "domain",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicWebsite"
+        ]
+      }
+    },
+    "/public/website/preview/{token}": {
+      "get": {
+        "operationId": "PublicWebsiteController_getPreviewWebsite",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicWebsite"
+        ]
+      }
+    },
+    "/public/website/{domain}/forms/{formKey}/submit": {
+      "post": {
+        "operationId": "PublicWebsiteController_submitForm",
+        "parameters": [
+          {
+            "name": "domain",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicWebsite"
+        ]
+      }
+    },
+    "/public/website/{domain}/analytics": {
+      "post": {
+        "operationId": "PublicWebsiteController_trackAnalytics",
+        "parameters": [
+          {
+            "name": "domain",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicWebsite"
         ]
       }
     },
@@ -1542,6 +2214,45 @@
         ]
       }
     },
+    "/audit-logs/platform/impersonation": {
+      "get": {
+        "operationId": "AuditLogsController_getImpersonationLogs",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AuditLogs"
+        ]
+      }
+    },
     "/audit-logs/{id}": {
       "get": {
         "operationId": "AuditLogsController_getAuditLogById",
@@ -1677,6 +2388,103 @@
         },
         "tags": [
           "Billing"
+        ]
+      }
+    },
+    "/billing/coupons": {
+      "get": {
+        "operationId": "CouponsController_listCoupons",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons"
+        ]
+      },
+      "post": {
+        "operationId": "CouponsController_createCoupon",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons"
+        ]
+      }
+    },
+    "/billing/coupons/{id}/active": {
+      "patch": {
+        "operationId": "CouponsController_toggleCouponActive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons"
+        ]
+      }
+    },
+    "/billing/coupons/{id}": {
+      "delete": {
+        "operationId": "CouponsController_deleteCoupon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons"
         ]
       }
     },

@@ -30,6 +30,31 @@ export const CURRENCY_OPTIONS: SelectOption[] = [
   { value: "KES", label: "Kenyan Shilling (KES)" },
 ];
 
+export const FONT_OPTIONS: SelectOption[] = [
+  { value: "inter", label: "Inter" },
+  { value: "poppins", label: "Poppins" },
+  { value: "manrope", label: "Manrope" },
+  { value: "nunito-sans", label: "Nunito Sans" },
+  { value: "source-sans-3", label: "Source Sans 3" },
+];
+
+export function resolveFontStack(fontKey: string | undefined) {
+  const normalized = (fontKey ?? "").trim().toLowerCase();
+  switch (normalized) {
+    case "poppins":
+      return "'Poppins', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    case "manrope":
+      return "'Manrope', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    case "nunito-sans":
+      return "'Nunito Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    case "source-sans-3":
+      return "'Source Sans 3', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    case "inter":
+    default:
+      return "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  }
+}
+
 export function formatMoney(value: number, currency: string, locale = "en-US") {
   try {
     return new Intl.NumberFormat(locale, {

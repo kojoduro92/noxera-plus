@@ -22,7 +22,7 @@ const faqs = [
 export default function PricingFaqPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto max-w-5xl px-6 py-12">
+      <div className="nx-shell py-12">
         <Link href="/" className="text-xs font-black uppercase tracking-wider text-indigo-300 hover:text-indigo-200">
           ← Back to Noxera Plus
         </Link>

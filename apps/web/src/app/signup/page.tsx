@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CreateTenantRequestV2, DENOMINATION_OPTIONS, getTenantDefaultsFromLocale, SIZE_RANGE_OPTIONS } from "@/lib/tenant-onboarding";
+import { resolveFontStack } from "@/lib/platform-options";
 
 type PublicPlan = {
   name: string;
@@ -16,6 +17,7 @@ type PublicProfile = {
   logoUrl?: string;
   brandPrimaryColor?: string;
   brandAccentColor?: string;
+  baseFontFamily?: string;
 };
 
 type CreatedTenant = {
@@ -52,6 +54,7 @@ export default function SignupPage() {
     logoUrl: "/brand-logo.png",
     brandPrimaryColor: "#d62f9d",
     brandAccentColor: "#0bb9f4",
+    baseFontFamily: "inter",
   });
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -149,10 +152,11 @@ export default function SignupPage() {
   const logoUrl = profile.logoUrl?.trim() || "/brand-logo.png";
   const brandPrimaryColor = profile.brandPrimaryColor || "#d62f9d";
   const brandAccentColor = profile.brandAccentColor || "#0bb9f4";
+  const baseFontFamily = resolveFontStack(profile.baseFontFamily);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
+    <main className="min-h-screen bg-slate-950 py-10 text-white" style={{ fontFamily: baseFontFamily }}>
+      <div className="nx-shell">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/"

@@ -13,6 +13,7 @@ const FALLBACK_PROFILE = {
   themeMode: "system",
   brandPrimaryColor: "#d62f9d",
   brandAccentColor: "#0bb9f4",
+  baseFontFamily: "inter",
 };
 
 export async function GET() {
@@ -46,6 +47,10 @@ export async function GET() {
       typeof payload.brandAccentColor === "string" && payload.brandAccentColor.trim()
         ? payload.brandAccentColor
         : FALLBACK_PROFILE.brandAccentColor,
+    baseFontFamily:
+      typeof payload.baseFontFamily === "string" && payload.baseFontFamily.trim()
+        ? payload.baseFontFamily
+        : FALLBACK_PROFILE.baseFontFamily,
   });
 
   try {

@@ -32,6 +32,11 @@ model Tenant {
   supportTickets SupportTicket[]
   branches    Branch[]
   website     Website?
+  websiteAssets WebsiteAsset[]
+  websiteForms WebsiteForm[]
+  websiteFormSubmissions WebsiteFormSubmission[]
+  websiteDomains WebsiteDomain[]
+  websiteAnalyticsEvents WebsiteAnalyticsEvent[]
   notifications Notification[]
   reminderSchedules ReminderSchedule[]
   outboxMessages OutboxMessage[]
@@ -284,6 +289,14 @@ model Website {
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pages         Page[]
+  themeRevisions WebsiteThemeRevision[]
+  publishLogs   WebsitePublishLog[]
+  assets        WebsiteAsset[]
+  forms         WebsiteForm[]
+  formSubmissions WebsiteFormSubmission[]
+  previewTokens WebsitePreviewToken[]
+  domains       WebsiteDomain[]
+  analyticsEvents WebsiteAnalyticsEvent[]
 }
 
 model Page {
@@ -297,6 +310,8 @@ model Page {
 
   website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   sections      Section[]
+  revisions     WebsitePageRevision[]
+  publishLogs   WebsitePublishLog[]
 
   @@unique([websiteId, slug])
 }
@@ -311,6 +326,185 @@ model Section {
   updatedAt     DateTime @updatedAt
 
   page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model WebsiteTemplate {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  name          String
+  family        String
+  status        String   @default("published")
+  description   String?
+  previewImageUrl String?
+  schema        Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WebsitePageRevision {
+  id            String   @id @default(uuid())
+  pageId        String
+  version       Int
+  status        String   @default("draft") // draft | published | archived
+  content       Json
+  seo           Json?
+  changeSummary String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, status])
+  @@unique([pageId, version])
+}
+
+model WebsiteThemeRevision {
+  id            String   @id @default(uuid())
+  websiteId     String
+  version       Int
+  status        String   @default("draft") // draft | published | archived
+  themeConfig   Json
+  changeSummary String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, status])
+  @@unique([websiteId, version])
+}
+
+model WebsitePublishLog {
+  id            String   @id @default(uuid())
+  websiteId     String
+  pageId        String?
+  actorEmail    String?
+  action        String // publish | rollback | template_apply | theme_publish
+  diff          Json?
+  createdAt     DateTime @default(now())
+
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  page          Page?    @relation(fields: [pageId], references: [id], onDelete: SetNull)
+
+  @@index([websiteId, createdAt])
+  @@index([pageId, createdAt])
+}
+
+model WebsiteAsset {
+  id            String   @id @default(uuid())
+  tenantId      String
+  websiteId     String
+  name          String
+  url           String
+  storageKey    String?
+  mimeType      String?
+  fileSizeBytes Int?
+  altText       String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([websiteId, createdAt])
+}
+
+model WebsiteForm {
+  id            String   @id @default(uuid())
+  tenantId      String
+  websiteId     String
+  key           String
+  name          String
+  status        String   @default("active")
+  schema        Json
+  notificationConfig Json?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  submissions   WebsiteFormSubmission[]
+
+  @@index([tenantId, status])
+  @@unique([websiteId, key])
+}
+
+model WebsiteFormSubmission {
+  id            String   @id @default(uuid())
+  tenantId      String
+  websiteId     String
+  formId        String
+  payload       Json
+  status        String   @default("received")
+  spamScore     Int      @default(0)
+  ipHash        String?
+  userAgentHash String?
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  form          WebsiteForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([formId, createdAt])
+}
+
+model WebsitePreviewToken {
+  id            String   @id @default(uuid())
+  websiteId     String
+  token         String   @unique
+  expiresAt     DateTime
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, expiresAt])
+}
+
+model WebsiteDomain {
+  id            String   @id @default(uuid())
+  tenantId      String
+  websiteId     String
+  hostname      String   @unique
+  verificationToken String
+  status        String   @default("pending") // pending | verified | failed
+  sslStatus     String   @default("pending") // pending | active | failed
+  isPrimary     Boolean  @default(false)
+  redirectToCanonical Boolean @default(true)
+  canonicalUrl  String?
+  verifiedAt    DateTime?
+  lastCheckedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([websiteId, isPrimary])
+}
+
+model WebsiteAnalyticsEvent {
+  id            String   @id @default(uuid())
+  tenantId      String
+  websiteId     String
+  pagePath      String
+  eventType     String // page_view | cta_click | form_submit
+  source        String?
+  payload       Json?
+  ipHash        String?
+  userAgentHash String?
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  website       Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, createdAt])
+  @@index([tenantId, eventType, createdAt])
 }
 
 model Service {

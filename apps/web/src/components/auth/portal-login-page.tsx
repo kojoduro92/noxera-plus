@@ -581,7 +581,7 @@ export function PortalLoginPage({ portal }: { portal: PortalType }) {
   }, [detectedMethods]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 font-sans antialiased text-white">
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 antialiased text-white">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-4 text-center">
           <div

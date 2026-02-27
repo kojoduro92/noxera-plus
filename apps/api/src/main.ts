@@ -93,7 +93,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Noxera Plus API')
-    .setDescription('Noxera Plus platform APIs for super-admin, admin, and public onboarding.')
+    .setDescription(
+      'Noxera Plus platform APIs for super-admin, admin, and public onboarding.',
+    )
     .setVersion('1.0.0')
     .build();
   const openApiDocument = SwaggerModule.createDocument(app, swaggerConfig);

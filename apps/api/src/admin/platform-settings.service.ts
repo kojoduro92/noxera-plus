@@ -32,6 +32,7 @@ const DEFAULT_PLATFORM_PROFILE = {
   themeMode: 'system',
   brandPrimaryColor: '#d62f9d',
   brandAccentColor: '#0bb9f4',
+  baseFontFamily: 'inter',
   supportedLanguages: ['en', 'fr'],
   supportedCountries: ['US', 'CA', 'GB', 'FR', 'GH', 'NG'],
   supportedCurrencies: ['USD', 'EUR', 'GBP', 'CAD', 'GHS', 'NGN'],
@@ -158,6 +159,7 @@ export class PlatformSettingsService {
       themeMode: readString(profile.themeMode, DEFAULT_PLATFORM_PROFILE.themeMode),
       brandPrimaryColor: readString(profile.brandPrimaryColor, DEFAULT_PLATFORM_PROFILE.brandPrimaryColor),
       brandAccentColor: readString(profile.brandAccentColor, DEFAULT_PLATFORM_PROFILE.brandAccentColor),
+      baseFontFamily: readString(profile.baseFontFamily, DEFAULT_PLATFORM_PROFILE.baseFontFamily),
     };
   }
 

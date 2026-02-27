@@ -71,6 +71,14 @@ function blendHexColors(base: string, overlay: string, weight: number) {
   return `#${rr.toString(16).padStart(2, "0")}${rg.toString(16).padStart(2, "0")}${rb.toString(16).padStart(2, "0")}`;
 }
 
+function hexToRgba(hex: string, alpha: number) {
+  const normalized = normalizeHexColor(hex, "#0f172a").replace("#", "");
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${Math.min(1, Math.max(0, alpha))})`;
+}
+
 export function ConsoleShell({
   shellId,
   navItems,
@@ -156,14 +164,15 @@ export function ConsoleShell({
   }, [profileEmail, profileName]);
   const primaryColor = normalizeHexColor(personalization.brandPrimaryColor, "#7c3aed");
   const accentColor = normalizeHexColor(personalization.brandAccentColor, "#06b6d4");
-  const sidebarStartColor = blendHexColors(primaryColor, "#0f172a", 0.78);
-  const sidebarMidColor = blendHexColors(primaryColor, "#0b1220", 0.86);
-  const sidebarEndColor = blendHexColors(accentColor, "#0b1220", 0.9);
-  const activeBgColor = blendHexColors(primaryColor, "#1f2937", 0.7);
-  const activeBorderColor = blendHexColors(primaryColor, "#cbd5e1", 0.66);
+  const sidebarStartColor = blendHexColors(primaryColor, "#020617", 0.9);
+  const sidebarMidColor = blendHexColors(primaryColor, "#020617", 0.94);
+  const sidebarEndColor = blendHexColors(accentColor, "#020617", 0.96);
+  const sidebarAuraColor = blendHexColors(primaryColor, accentColor, 0.45);
+  const activeBgColor = blendHexColors(primaryColor, "#0f172a", 0.82);
+  const activeBorderColor = blendHexColors(primaryColor, "#94a3b8", 0.8);
 
   return (
-    <div className={`nx-console-theme ${isDarkMode ? "nx-console-dark bg-slate-950 text-slate-100" : "nx-console-light bg-slate-100 text-slate-900"} flex h-screen font-sans antialiased transition-colors duration-300`}>
+    <div className={`nx-console-theme ${isDarkMode ? "nx-console-dark bg-slate-950 text-slate-100" : "nx-console-light bg-slate-100 text-slate-900"} flex h-screen antialiased transition-colors duration-300`}>
       {isSidebarOpen && (
         <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
@@ -173,7 +182,7 @@ export function ConsoleShell({
           isSidebarCollapsed ? "lg:w-24" : "lg:w-72"
         } ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{
-          backgroundImage: `radial-gradient(140% 75% at 8% -5%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${sidebarStartColor} 0%, ${sidebarMidColor} 55%, ${sidebarEndColor} 100%)`,
+          backgroundImage: `radial-gradient(125% 65% at 4% -8%, ${hexToRgba(sidebarAuraColor, 0.22)} 0%, rgba(255,255,255,0) 58%), linear-gradient(180deg, ${sidebarStartColor} 0%, ${sidebarMidColor} 52%, ${sidebarEndColor} 100%)`,
         }}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-5">
@@ -227,7 +236,7 @@ export function ConsoleShell({
                 onClick={() => setIsSidebarOpen(false)}
                 className={`group flex items-center rounded-xl border border-transparent px-4 py-3 transition-all duration-200 ${
                   isSidebarCollapsed ? "lg:justify-center lg:px-3" : ""
-                } ${active ? "text-white shadow-md shadow-slate-950/30" : "text-white/85 hover:bg-white/10 hover:text-white"}`}
+                } ${active ? "text-white shadow-sm" : "text-white/85 hover:bg-white/10 hover:text-white"}`}
                 style={active ? { backgroundColor: activeBgColor, borderColor: activeBorderColor } : undefined}
               >
                 <span className={`${active ? "text-white" : "text-white/70 group-hover:text-white"} transition-colors`}>{item.icon}</span>
@@ -409,7 +418,7 @@ export function ConsoleShell({
         </header>
 
         <div className={`flex-1 overflow-auto transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-slate-100"}`}>
-          <div className="mx-auto max-w-7xl p-5 lg:p-8">
+          <div className="nx-shell py-5 lg:py-8">
             <div className={`mb-5 rounded-2xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600"}`}>
               <p className="text-xs font-semibold">{infoBanner.title}</p>
               <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{infoBanner.description}</p>

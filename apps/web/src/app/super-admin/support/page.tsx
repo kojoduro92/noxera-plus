@@ -259,6 +259,7 @@ export default function SupportTicketsPage() {
       </div>
 
       {activeTab === "tickets" && (
+        <>
         <form onSubmit={submitCreateTicket} className="rounded-2xl border border-slate-200 bg-white p-5">
         <h3 className="text-lg font-bold text-slate-900">Create Support Ticket</h3>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -372,7 +373,8 @@ export default function SupportTicketsPage() {
           </div>
         </div>
       </div>
-
+        </>
+      )}
       {error && (
         <div className="space-y-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           <p>{error}</p>
