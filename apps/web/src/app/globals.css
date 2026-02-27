@@ -9,7 +9,11 @@
   --brand-accent-rgb: 34, 197, 94;
   --app-font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --app-shell-max-width: 100%;
-  --app-shell-inline-padding: clamp(0.95rem, 1.35vw, 1.75rem);
+  --app-shell-inline-padding: clamp(0.8rem, 1.1vw, 1.35rem);
+  --nx-surface: #ffffff;
+  --nx-surface-muted: #f8fafc;
+  --nx-surface-border: #dbe2ef;
+  --nx-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -83,8 +87,54 @@ a {
   color: var(--brand-primary);
 }
 
+.nx-soft-panel {
+  border-color: color-mix(in srgb, var(--brand-primary) 20%, var(--nx-surface-border));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.86)),
+    radial-gradient(120% 95% at 0% 0%, rgba(var(--brand-primary-rgb), 0.05), transparent 44%);
+  box-shadow: var(--nx-shadow);
+}
+
+.nx-console-theme .nx-shell section[class*="rounded"][class*="border"],
+.nx-console-theme .nx-shell article[class*="rounded"][class*="border"],
+.nx-console-theme .nx-shell div[class*="rounded"][class*="border"][class*="bg-white"] {
+  box-shadow: var(--nx-shadow);
+  border-color: var(--nx-surface-border);
+}
+
+.nx-console-theme .nx-shell table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.nx-console-theme .nx-shell thead th {
+  letter-spacing: 0.08em;
+  font-size: 0.69rem;
+  text-transform: uppercase;
+}
+
+.nx-console-theme .nx-shell input,
+.nx-console-theme .nx-shell select,
+.nx-console-theme .nx-shell textarea {
+  border-radius: 0.7rem;
+}
+
+.nx-console-theme .nx-shell button,
+.nx-console-theme .nx-shell a[class*="rounded"] {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.nx-console-theme .nx-shell button:hover,
+.nx-console-theme .nx-shell a[class*="rounded"]:hover {
+  transform: translateY(-1px);
+}
+
 .nx-console-dark {
   color-scheme: dark;
+  --nx-surface: #0f172a;
+  --nx-surface-muted: #0b1220;
+  --nx-surface-border: #334155;
+  --nx-shadow: 0 14px 30px rgba(2, 6, 23, 0.55);
 }
 
 .nx-console-dark .bg-white {
@@ -127,6 +177,13 @@ a {
 .nx-console-dark .text-slate-500,
 .nx-console-dark .text-slate-400 {
   color: #94a3b8 !important;
+}
+
+.nx-console-dark .nx-soft-panel {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(10, 15, 28, 0.92)),
+    radial-gradient(120% 95% at 0% 0%, rgba(var(--brand-primary-rgb), 0.15), transparent 48%);
+  border-color: #334155;
 }
 
 .nx-console-dark input,

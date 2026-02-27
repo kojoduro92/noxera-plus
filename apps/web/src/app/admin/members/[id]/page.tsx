@@ -24,9 +24,15 @@ export default function MemberDetailsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const memberId = params.id;
+  const memberId = params?.id ?? "";
 
   const loadMember = useCallback(async () => {
+    if (!memberId) {
+      setLoading(false);
+      setError("Invalid member route. Reload from Members directory.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -47,6 +53,7 @@ export default function MemberDetailsPage() {
   }, [loadMember]);
 
   const submit = async (payload: MemberPayload) => {
+    if (!memberId) return;
     setSubmitting(true);
     setError("");
     setNotice("");

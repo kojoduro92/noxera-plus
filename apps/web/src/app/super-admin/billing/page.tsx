@@ -37,12 +37,13 @@ export default function BillingPlansPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const currentPath = pathname ?? "/super-admin/billing";
 
   const [activeTab, setActiveTab] = useState<"subscriptions" | "coupons">("subscriptions");
-  const page = Math.max(1, Number(searchParams.get("page") || "1"));
-  const status = searchParams.get("status") || "";
-  const search = searchParams.get("search") || "";
-  const planId = searchParams.get("planId") || "";
+  const page = Math.max(1, Number(searchParams?.get("page") || "1"));
+  const status = searchParams?.get("status") || "";
+  const search = searchParams?.get("search") || "";
+  const planId = searchParams?.get("planId") || "";
 
   const [draftSearch, setDraftSearch] = useState(search);
   const [draftStatus, setDraftStatus] = useState(status);
@@ -173,13 +174,13 @@ export default function BillingPlansPage() {
     if (draftStatus) params.set("status", draftStatus);
     if (draftPlanId) params.set("planId", draftPlanId);
     params.set("page", "1");
-    router.replace(`${pathname}?${params.toString()}`);
+    router.replace(`${currentPath}?${params.toString()}`);
   };
 
   const setPage = (nextPage: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", String(Math.max(1, nextPage)));
-    router.replace(`${pathname}?${params.toString()}`);
+    router.replace(`${currentPath}?${params.toString()}`);
   };
 
   const updateTenantPlan = async (tenantId: string, selectedPlanId: string) => {

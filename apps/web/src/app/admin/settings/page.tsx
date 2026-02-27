@@ -117,7 +117,7 @@ function resolveTab(value: string | null): TabKey {
 export default function AdminSettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchParamsString = searchParams.toString();
+  const searchParamsString = searchParams?.toString() ?? "";
 
   const [activeTab, setActiveTab] = useState<TabKey>("branches");
   const [loading, setLoading] = useState(true);

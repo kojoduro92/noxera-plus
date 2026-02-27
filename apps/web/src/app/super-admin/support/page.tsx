@@ -49,12 +49,13 @@ export default function SupportTicketsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const currentPath = pathname ?? "/super-admin/support";
 
   const [activeTab, setActiveTab] = useState<"tickets" | "impersonation">("tickets");
-  const page = Math.max(1, Number(searchParams.get("page") || "1"));
-  const status = searchParams.get("status") || "";
-  const priority = searchParams.get("priority") || "";
-  const search = searchParams.get("search") || "";
+  const page = Math.max(1, Number(searchParams?.get("page") || "1"));
+  const status = searchParams?.get("status") || "";
+  const priority = searchParams?.get("priority") || "";
+  const search = searchParams?.get("search") || "";
 
   const [draftStatus, setDraftStatus] = useState(status);
   const [draftPriority, setDraftPriority] = useState(priority);
@@ -135,13 +136,13 @@ export default function SupportTicketsPage() {
     if (draftPriority) params.set("priority", draftPriority);
     if (draftSearch.trim()) params.set("search", draftSearch.trim());
     params.set("page", "1");
-    router.replace(`${pathname}?${params.toString()}`);
+    router.replace(`${currentPath}?${params.toString()}`);
   };
 
   const setPage = (nextPage: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", String(Math.max(1, nextPage)));
-    router.replace(`${pathname}?${params.toString()}`);
+    router.replace(`${currentPath}?${params.toString()}`);
   };
 
   const submitCreateTicket = async (event: FormEvent<HTMLFormElement>) => {

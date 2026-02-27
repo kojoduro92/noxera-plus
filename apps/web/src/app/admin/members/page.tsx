@@ -103,7 +103,7 @@ export default function MembersPage() {
   }, [search, selectedBranchId, statusFilter]);
 
   useEffect(() => {
-    if (searchParams.get("created") === "1") {
+    if (searchParams?.get("created") === "1") {
       setNotice("Member created successfully.");
     }
   }, [searchParams]);

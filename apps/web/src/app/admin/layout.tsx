@@ -15,6 +15,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Dashboard",
     href: "/admin",
+    group: "Overview",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -24,6 +25,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Members",
     href: "/admin/members",
+    group: "People",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5V4H2v16h5m10 0v-6a3 3 0 10-6 0v6m6 0H7" />
@@ -60,6 +62,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Services",
     href: "/admin/services",
+    group: "Operations",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h13M8 12h13M8 17h13M3 7h.01M3 12h.01M3 17h.01" />
@@ -87,6 +90,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Giving",
     href: "/admin/giving",
+    group: "Finance",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -132,6 +136,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Communication",
     href: "/admin/communication",
+    group: "Engagement",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -141,6 +146,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Website",
     href: "/admin/website",
+    group: "Digital",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
@@ -168,6 +174,7 @@ const navItems: ConsoleNavItem[] = [
   {
     name: "Notifications",
     href: "/admin/notifications",
+    group: "Administration",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
@@ -277,11 +284,12 @@ function getPageTitle(pathname: string): string {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentPath = pathname ?? "/admin";
   const router = useRouter();
   const { user } = useAuth();
   const { personalization } = usePlatformPersonalization();
   const { setScope } = useBranch();
-  const pageTitle = useMemo(() => getPageTitle(pathname), [pathname]);
+  const pageTitle = useMemo(() => getPageTitle(currentPath), [currentPath]);
   const brandAccentMuted = useMemo(() => {
     const accentColor = normalizeHexColor(personalization.brandAccentColor, "#06b6d4");
     return blendHexColors(accentColor, "#e2e8f0", 0.62);
@@ -419,17 +427,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const quickAction =
-    pathname.startsWith("/admin/members")
+    currentPath.startsWith("/admin/members")
       ? { label: "Add Member", href: "/admin/members/new" }
-      : pathname.startsWith("/admin/visitors")
+      : currentPath.startsWith("/admin/visitors")
         ? { label: "Add Visitor", href: "/admin/members/new?status=Visitor" }
-        : pathname.startsWith("/admin/tags")
+        : currentPath.startsWith("/admin/tags")
           ? { label: "Manage Tags", href: "/admin/tags" }
-      : pathname.startsWith("/admin/followups")
+      : currentPath.startsWith("/admin/followups")
         ? { label: "New Follow-up", href: "/admin/followups" }
-      : pathname.startsWith("/admin/services")
+      : currentPath.startsWith("/admin/services")
         ? { label: "Schedule Service", href: "/admin/services" }
-        : pathname.startsWith("/admin/events")
+        : currentPath.startsWith("/admin/events")
           ? { label: "Create Event", href: "/admin/events" }
           : undefined;
 
@@ -478,7 +486,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <ConsoleShell
         shellId="noxera_admin_console"
         navItems={navItems}
-        activePath={pathname}
+        activePath={currentPath}
         pageTitle={pageTitle}
         consoleLabel="Church Admin Console"
         titlePrefix="Church Operations"
@@ -515,7 +523,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <ConsoleShell
         shellId="noxera_admin_console"
         navItems={navItems}
-        activePath={pathname}
+        activePath={currentPath}
         pageTitle="Account Setup Required"
         consoleLabel="Church Admin Console"
         titlePrefix="Church Operations"
@@ -556,7 +564,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <ConsoleShell
       shellId="noxera_admin_console"
       navItems={navItems}
-      activePath={pathname}
+      activePath={currentPath}
       pageTitle={pageTitle}
       consoleLabel="Church Admin Console"
       titlePrefix="Church Operations"

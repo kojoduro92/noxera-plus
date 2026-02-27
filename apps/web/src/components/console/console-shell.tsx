@@ -9,6 +9,7 @@ export type ConsoleNavItem = {
   name: string;
   href: string;
   icon: React.ReactNode;
+  group?: string;
 };
 
 export type ConsoleProfileAction = {
@@ -165,11 +166,12 @@ export function ConsoleShell({
   const primaryColor = normalizeHexColor(personalization.brandPrimaryColor, "#7c3aed");
   const accentColor = normalizeHexColor(personalization.brandAccentColor, "#06b6d4");
   const sidebarStartColor = blendHexColors(primaryColor, "#020617", 0.9);
-  const sidebarMidColor = blendHexColors(primaryColor, "#020617", 0.94);
-  const sidebarEndColor = blendHexColors(accentColor, "#020617", 0.96);
-  const sidebarAuraColor = blendHexColors(primaryColor, accentColor, 0.45);
-  const activeBgColor = blendHexColors(primaryColor, "#0f172a", 0.82);
+  const sidebarMidColor = blendHexColors(primaryColor, "#020617", 0.95);
+  const sidebarEndColor = blendHexColors(accentColor, "#020617", 0.975);
+  const sidebarAuraColor = blendHexColors(primaryColor, accentColor, 0.52);
+  const activeBgColor = blendHexColors(primaryColor, "#0f172a", 0.6);
   const activeBorderColor = blendHexColors(primaryColor, "#94a3b8", 0.8);
+  const navAccent = `linear-gradient(110deg, ${primaryColor}, ${accentColor})`;
 
   return (
     <div className={`nx-console-theme ${isDarkMode ? "nx-console-dark bg-slate-950 text-slate-100" : "nx-console-light bg-slate-100 text-slate-900"} flex h-screen antialiased transition-colors duration-300`}>
@@ -178,16 +180,16 @@ export function ConsoleShell({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-white/10 text-white shadow-2xl transition-all duration-300 lg:static lg:inset-auto lg:translate-x-0 ${
-          isSidebarCollapsed ? "lg:w-24" : "lg:w-72"
+        className={`fixed inset-y-0 left-0 z-50 flex w-[20rem] flex-col border-r border-white/10 text-white shadow-2xl transition-all duration-300 lg:static lg:inset-auto lg:translate-x-0 ${
+          isSidebarCollapsed ? "lg:w-24" : "lg:w-[20rem]"
         } ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{
-          backgroundImage: `radial-gradient(125% 65% at 4% -8%, ${hexToRgba(sidebarAuraColor, 0.22)} 0%, rgba(255,255,255,0) 58%), linear-gradient(180deg, ${sidebarStartColor} 0%, ${sidebarMidColor} 52%, ${sidebarEndColor} 100%)`,
+          backgroundImage: `radial-gradient(130% 70% at 10% -15%, ${hexToRgba(sidebarAuraColor, 0.28)} 0%, rgba(255,255,255,0) 58%), radial-gradient(95% 56% at 110% 0%, ${hexToRgba(primaryColor, 0.2)} 0%, rgba(255,255,255,0) 62%), linear-gradient(180deg, ${sidebarStartColor} 0%, ${sidebarMidColor} 52%, ${sidebarEndColor} 100%)`,
         }}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-5">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-indigo-500 text-xs font-black text-white shadow-inner">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl text-xs font-black text-white shadow-inner ring-1 ring-white/20" style={{ background: navAccent }}>
               {personalization.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={personalization.logoUrl} alt="Platform logo" className="h-full w-full object-contain" />
@@ -195,7 +197,7 @@ export function ConsoleShell({
                 "N+"
               )}
             </div>
-            <span className={`text-2xl font-black tracking-tighter ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{brandName}</span>
+            <span className={`text-[2rem] font-black tracking-tighter leading-none ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{brandName}</span>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -221,27 +223,35 @@ export function ConsoleShell({
           </div>
         </div>
 
-        <div className={`px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] text-white/50 ${isSidebarCollapsed ? "lg:hidden" : ""}`}>
+        <div className={`px-6 py-5 text-[10px] font-black uppercase tracking-[0.35em] text-white/50 ${isSidebarCollapsed ? "lg:hidden" : ""}`}>
           {consoleLabel}
         </div>
 
-        <nav className={`flex-1 space-y-1 overflow-y-auto py-2 ${isSidebarCollapsed ? "px-2" : "px-4"}`}>
-          {navItems.map((item) => {
-            const active = activePath === item.href || (item.href !== "/admin" && activePath.startsWith(item.href));
+        <nav className={`flex-1 space-y-2 overflow-y-auto py-1 ${isSidebarCollapsed ? "px-2" : "px-4"}`}>
+          {navItems.map((item, index) => {
+            const previousGroup = index > 0 ? navItems[index - 1]?.group : undefined;
+            const showGroup = !isSidebarCollapsed && item.group && item.group !== previousGroup;
+            const isRootItem = item.href === "/admin" || item.href === "/super-admin";
+            const active = activePath === item.href || (!isRootItem && activePath.startsWith(item.href));
+
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                title={item.name}
-                onClick={() => setIsSidebarOpen(false)}
-                className={`group flex items-center rounded-xl border border-transparent px-4 py-3 transition-all duration-200 ${
-                  isSidebarCollapsed ? "lg:justify-center lg:px-3" : ""
-                } ${active ? "text-white shadow-sm" : "text-white/85 hover:bg-white/10 hover:text-white"}`}
-                style={active ? { backgroundColor: activeBgColor, borderColor: activeBorderColor } : undefined}
-              >
-                <span className={`${active ? "text-white" : "text-white/70 group-hover:text-white"} transition-colors`}>{item.icon}</span>
-                <span className={`ml-3 text-sm font-bold ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.name}</span>
-              </Link>
+              <React.Fragment key={item.name}>
+                {showGroup ? (
+                  <p className="px-2 pt-3 text-[10px] font-black uppercase tracking-[0.32em] text-white/45">{item.group}</p>
+                ) : null}
+                <Link
+                  href={item.href}
+                  title={item.name}
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={`group flex items-center rounded-xl border border-transparent px-4 py-3 transition-all duration-200 ${
+                    isSidebarCollapsed ? "lg:justify-center lg:px-3" : ""
+                  } ${active ? "text-white shadow-sm" : "text-white/85 hover:bg-white/10 hover:text-white"}`}
+                  style={active ? { backgroundImage: navAccent, borderColor: activeBorderColor, boxShadow: "0 10px 24px rgba(17,24,39,.32)" } : undefined}
+                >
+                  <span className={`${active ? "text-white" : "text-white/70 group-hover:text-white"} transition-colors`}>{item.icon}</span>
+                  <span className={`ml-3 text-sm font-bold ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.name}</span>
+                </Link>
+              </React.Fragment>
             );
           })}
         </nav>
@@ -260,7 +270,7 @@ export function ConsoleShell({
       </aside>
 
       <main className="relative flex flex-1 flex-col overflow-hidden">
-        <header className={`flex h-20 items-center justify-between border-b px-5 lg:px-8 transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+        <header className={`flex h-20 items-center justify-between border-b px-5 lg:px-8 transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900/95" : "border-slate-200 bg-white/95"} backdrop-blur`}>
           <div className="flex min-w-0 items-center gap-4">
             <button className={`rounded-lg p-2 lg:hidden ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`} onClick={() => setIsSidebarOpen(true)}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,8 +293,8 @@ export function ConsoleShell({
             </div>
           </div>
 
-          <div className="mx-8 hidden max-w-xl flex-1 xl:flex">
-            <div className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+          <div className="mx-8 hidden max-w-2xl flex-1 xl:flex">
+            <div className={`flex w-full items-center gap-2 rounded-2xl border px-4 py-2.5 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -316,7 +326,7 @@ export function ConsoleShell({
             )}
             <PortalSwitcher links={portalLinks} isDarkMode={isDarkMode} />
             {quickAction && (
-              <Link href={quickAction.href} className="hidden rounded-xl nx-brand-btn px-4 py-2.5 text-xs font-black uppercase tracking-wider transition hover:opacity-90 md:inline-flex !text-white shadow-sm">
+              <Link href={quickAction.href} className="hidden rounded-xl nx-brand-btn px-5 py-2.5 text-xs font-black uppercase tracking-wider transition hover:opacity-90 md:inline-flex !text-white shadow-[0_10px_22px_rgba(79,70,229,.34)]">
                 {quickAction.label}
               </Link>
             )}
@@ -419,7 +429,7 @@ export function ConsoleShell({
 
         <div className={`flex-1 overflow-auto transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-slate-100"}`}>
           <div className="nx-shell py-5 lg:py-8">
-            <div className={`mb-5 rounded-2xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600"}`}>
+            <div className={`mb-5 rounded-2xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600"} nx-soft-panel`}>
               <p className="text-xs font-semibold">{infoBanner.title}</p>
               <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{infoBanner.description}</p>
             </div>

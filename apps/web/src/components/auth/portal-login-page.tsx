@@ -208,7 +208,7 @@ export function PortalLoginPage({ portal }: { portal: PortalType }) {
   const progressState = isBusy ? progressByPhase[busyPhase] : REDIRECT_BOOTSTRAP_PROGRESS;
 
   const destination = useMemo(() => {
-    const nextPath = searchParams.get("next");
+    const nextPath = searchParams?.get("next");
     return nextPath && nextPath.startsWith(cfg.destinationPrefix) ? nextPath : cfg.defaultDestination;
   }, [cfg.defaultDestination, cfg.destinationPrefix, searchParams]);
 

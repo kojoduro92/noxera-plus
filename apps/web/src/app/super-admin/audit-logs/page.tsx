@@ -41,15 +41,16 @@ export default function AuditLogsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const currentPath = pathname ?? "/super-admin/audit-logs";
 
-  const page = Math.max(1, Number(searchParams.get("page") || "1"));
+  const page = Math.max(1, Number(searchParams?.get("page") || "1"));
   const activeFilters = useMemo<AuditFilters>(
     () => ({
-      search: searchParams.get("search") || "",
-      action: searchParams.get("action") || "",
-      tenantId: searchParams.get("tenantId") || "",
-      from: searchParams.get("from") || "",
-      to: searchParams.get("to") || "",
+      search: searchParams?.get("search") || "",
+      action: searchParams?.get("action") || "",
+      tenantId: searchParams?.get("tenantId") || "",
+      from: searchParams?.get("from") || "",
+      to: searchParams?.get("to") || "",
     }),
     [searchParams],
   );
@@ -92,13 +93,13 @@ export default function AuditLogsPage() {
 
   const applyFilters = () => {
     const queryString = toQueryString(draftFilters, 1);
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+    router.replace(queryString ? `${currentPath}?${queryString}` : currentPath);
   };
 
   const setPage = (nextPage: number) => {
     const safePage = Math.max(1, nextPage);
     const queryString = toQueryString(activeFilters, safePage);
-    router.replace(`${pathname}?${queryString}`);
+    router.replace(`${currentPath}?${queryString}`);
   };
 
   const retry = async () => {
