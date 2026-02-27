@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { FONT_OPTIONS } from "@/lib/platform-options";
 import { downloadRows, ExportFormat } from "@/lib/export-utils";
@@ -106,6 +106,9 @@ type WebsiteSnapshot = {
     primaryColor?: string;
     accentColor?: string;
     font?: string;
+    layoutMode?: string;
+    customContentWidth?: string | number;
+    templateStyle?: string;
     spacingScale?: string;
     radiusScale?: string;
     elevationScale?: string;
@@ -245,7 +248,7 @@ const BLOCK_LIBRARY: Array<{ type: string; label: string; defaultSettings: Block
     type: "custom_fragment",
     label: "Custom HTML Fragment",
     defaultSettings: {
-      html: "<div class='custom-fragment'><h3>Custom Embed</h3><p>Paste safe HTML fragment.</p></div>",
+      html: "<div class='nx-media-card'><h3>Custom Embed</h3><p>Paste safe HTML fragment. Headings, lists, tables, links, and iframe embeds are auto-styled.</p></div>",
       warnings: [],
     },
   },
@@ -361,6 +364,9 @@ export default function WebsiteBuilderPage() {
   const [themePrimaryColor, setThemePrimaryColor] = useState("#4f46e5");
   const [themeAccentColor, setThemeAccentColor] = useState("#22c55e");
   const [themeFont, setThemeFont] = useState("inter");
+  const [themeLayoutMode, setThemeLayoutMode] = useState("full");
+  const [themeCustomContentWidth, setThemeCustomContentWidth] = useState("1440");
+  const [themeTemplateStyle, setThemeTemplateStyle] = useState("corporate-blue");
 
   const [assetName, setAssetName] = useState("");
   const [assetUrl, setAssetUrl] = useState("");
@@ -476,6 +482,9 @@ export default function WebsiteBuilderPage() {
       setThemePrimaryColor(typeof themeConfig.primaryColor === "string" ? themeConfig.primaryColor : "#4f46e5");
       setThemeAccentColor(typeof themeConfig.accentColor === "string" ? themeConfig.accentColor : "#22c55e");
       setThemeFont(normalizeFont(themeConfig.font));
+      setThemeLayoutMode(typeof themeConfig.layoutMode === "string" ? themeConfig.layoutMode : "full");
+      setThemeCustomContentWidth(String(themeConfig.customContentWidth ?? "1440"));
+      setThemeTemplateStyle(typeof themeConfig.templateStyle === "string" ? themeConfig.templateStyle : "corporate-blue");
 
       setSelectedPageId((current) => {
         if (current && websitePayload.pages.some((page) => page.id === current)) {
@@ -504,21 +513,36 @@ export default function WebsiteBuilderPage() {
     () => snapshot?.pages.find((page) => page.id === selectedPageId) ?? snapshot?.pages[0] ?? null,
     [snapshot?.pages, selectedPageId],
   );
+  const hydratedDraftSignatureRef = useRef("");
+  const selectedPageDraftSignature = selectedPage
+    ? `${selectedPage.id}:${selectedPage.draftRevision?.id ?? "none"}:${selectedPage.publishedRevision?.id ?? "none"}`
+    : "";
+
+  useEffect(() => {
+    if (!snapshot?.pages?.length) return;
+    if (selectedPageId && snapshot.pages.some((page) => page.id === selectedPageId)) return;
+    setSelectedPageId(snapshot.pages[0]?.id ?? null);
+  }, [selectedPageId, snapshot?.pages]);
 
   useEffect(() => {
     if (!selectedPage) {
+      hydratedDraftSignatureRef.current = "";
       setDraftBlocks([]);
       setDraftSeo({});
       setSelectedBlockId(null);
       setDraftChanged(false);
       return;
     }
+    if (hydratedDraftSignatureRef.current === selectedPageDraftSignature) {
+      return;
+    }
+    hydratedDraftSignatureRef.current = selectedPageDraftSignature;
 
     setDraftBlocks((selectedPage.effectiveContent?.blocks ?? []).map((block) => ({ ...block, settings: { ...(block.settings || {}) } })));
     setDraftSeo({ ...(selectedPage.effectiveSeo ?? {}) });
     setSelectedBlockId((selectedPage.effectiveContent?.blocks ?? [])[0]?.id ?? null);
     setDraftChanged(false);
-  }, [selectedPage]);
+  }, [selectedPage, selectedPageDraftSignature]);
 
   const selectedBlock = useMemo(
     () => draftBlocks.find((block) => block.id === selectedBlockId) ?? null,
@@ -759,10 +783,28 @@ export default function WebsiteBuilderPage() {
           primaryColor: themePrimaryColor,
           accentColor: themeAccentColor,
           font: themeFont,
+          layoutMode: themeLayoutMode,
+          customContentWidth: themeCustomContentWidth,
+          templateStyle: themeTemplateStyle,
         }),
       });
+      setSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              themeConfig: {
+                ...current.themeConfig,
+                primaryColor: themePrimaryColor,
+                accentColor: themeAccentColor,
+                font: themeFont,
+                layoutMode: themeLayoutMode,
+                customContentWidth: themeCustomContentWidth,
+                templateStyle: themeTemplateStyle,
+              },
+            }
+          : current,
+      );
       updateNotice("Theme updated.");
-      await loadSnapshot();
     } catch (err) {
       updateError(getErrorMessage(err, "Unable to update theme."));
     } finally {
@@ -779,7 +821,6 @@ export default function WebsiteBuilderPage() {
       });
       setGlobalSeo(payload);
       updateNotice("Global SEO settings updated.");
-      await loadSnapshot();
     } catch (err) {
       updateError(getErrorMessage(err, "Unable to update global SEO settings."));
     } finally {
@@ -1374,6 +1415,38 @@ export default function WebsiteBuilderPage() {
                     ))}
                   </select>
                 </label>
+                <label className="space-y-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Template Style
+                  <select value={themeTemplateStyle} onChange={(event) => setThemeTemplateStyle(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                    <option value="corporate-blue">Corporate Blue</option>
+                    <option value="midnight-modern">Midnight Modern</option>
+                    <option value="community-warm">Community Warm</option>
+                    <option value="growth-gradient">Growth Gradient</option>
+                    <option value="classic-red">Classic Red</option>
+                    <option value="classic-contemporary">Classic Contemporary</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Content Width
+                  <select value={themeLayoutMode} onChange={(event) => setThemeLayoutMode(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                    <option value="full">Full Width</option>
+                    <option value="boxed">Boxed</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                {themeLayoutMode === "custom" ? (
+                  <label className="space-y-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Custom Width (px)
+                    <input
+                      type="number"
+                      min={960}
+                      max={2200}
+                      value={themeCustomContentWidth}
+                      onChange={(event) => setThemeCustomContentWidth(event.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                ) : null}
                 <button type="button" onClick={() => void saveTheme()} disabled={busy} className="rounded-lg nx-brand-btn px-3 py-2 text-xs font-black uppercase tracking-wider text-white disabled:opacity-60">
                   Save Theme
                 </button>
@@ -1439,9 +1512,14 @@ export default function WebsiteBuilderPage() {
                 />
 
                 {selectedBlock.type === "custom_fragment" && (
-                  <button type="button" onClick={() => void validateFragment()} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700">
-                    Validate & Sanitize Fragment
-                  </button>
+                  <div className="space-y-2">
+                    <button type="button" onClick={() => void validateFragment()} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700">
+                      Validate & Sanitize Fragment
+                    </button>
+                    <p className="text-xs font-semibold text-slate-500">
+                      Built-in styling supports semantic HTML and classes like <span className="font-mono">nx-media-card</span>.
+                    </p>
+                  </div>
                 )}
               </section>
             ) : (
@@ -1495,23 +1573,30 @@ export default function WebsiteBuilderPage() {
                 const heroTitle = getTemplateHero(template);
                 return (
                   <article key={template.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                    <div
-                      className="rounded-xl border border-white/30 p-4 text-white"
-                      style={{ backgroundImage: getTemplateFamilyGradient(template.family) }}
-                    >
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-200">{template.family}</p>
-                      <p className="mt-2 text-lg font-black leading-tight">{heroTitle}</p>
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {pages.slice(0, 4).map((page) => (
-                          <span key={`${template.key}-${page.slug}`} className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-100">
-                            {page.slug || page.title}
-                          </span>
-                        ))}
-                        {pages.length > 4 ? (
-                          <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-100">
-                            +{pages.length - 4}
-                          </span>
-                        ) : null}
+                    <div className="relative overflow-hidden rounded-xl border border-white/30 text-white">
+                      {template.previewImageUrl ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={template.previewImageUrl} alt={`${template.name} template preview`} className="h-44 w-full object-cover" loading="lazy" />
+                        </>
+                      ) : (
+                        <div className="h-44 w-full" style={{ backgroundImage: getTemplateFamilyGradient(template.family) }} />
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-transparent p-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-200">{template.family}</p>
+                        <p className="mt-2 text-lg font-black leading-tight">{heroTitle}</p>
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {pages.slice(0, 4).map((page) => (
+                            <span key={`${template.key}-${page.slug}`} className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-100">
+                              {page.slug || page.title}
+                            </span>
+                          ))}
+                          {pages.length > 4 ? (
+                            <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-100">
+                              +{pages.length - 4}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 

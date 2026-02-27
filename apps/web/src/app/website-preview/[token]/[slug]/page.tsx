@@ -18,8 +18,8 @@ type PreviewWebsitePayload = {
   expiresAt?: string;
 };
 
-export default function WebsitePreviewPage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = use(params);
+export default function WebsitePreviewSlugPage({ params }: { params: Promise<{ token: string; slug: string }> }) {
+  const { token, slug } = use(params);
   const [website, setWebsite] = useState<PreviewWebsitePayload | null>(null);
   const [error, setError] = useState("");
 
@@ -60,7 +60,7 @@ export default function WebsitePreviewPage({ params }: { params: Promise<{ token
       <div className="sticky top-0 z-50 border-b border-indigo-300/30 bg-indigo-500/20 px-4 py-2 text-center text-xs font-black uppercase tracking-wider text-indigo-100 backdrop-blur">
         Preview Mode{website.expiresAt ? ` • Expires ${new Date(website.expiresAt).toLocaleString()}` : ""}
       </div>
-      <PublicSiteRenderer website={website} previewBasePath={`/website-preview/${token}`} />
+      <PublicSiteRenderer website={website} pageSlug={slug} previewBasePath={`/website-preview/${token}`} />
     </div>
   );
 }

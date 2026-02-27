@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
@@ -75,6 +75,8 @@ export default function MembersPage() {
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"membershipDate" | "name" | "status">("membershipDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [importFailures, setImportFailures] = useState<ImportFailure[]>([]);
   const [selectedMember, setSelectedMember] = useState<MemberProfile | null>(null);
 
@@ -214,29 +216,57 @@ export default function MembersPage() {
   };
 
   const activeMembers = members.filter((member) => member.status === "Active").length;
+  const visitorMembers = members.filter((member) => member.status === "Visitor").length;
+  const prospectMembers = members.filter((member) => member.status === "Prospect").length;
+  const inactiveMembers = members.filter((member) => member.status === "Inactive").length;
   const withContact = members.filter((member) => Boolean(member.email || member.phone)).length;
+  const contactCompleteness = members.length ? Math.round((withContact / members.length) * 100) : 0;
+  const taggedMembers = members.filter((member) => member.tags.length > 0).length;
+  const thisMonth = new Date();
+  const newThisMonth = members.filter((member) => {
+    if (!member.membershipDate) return false;
+    const date = new Date(member.membershipDate);
+    return !Number.isNaN(date.getTime()) && date.getMonth() === thisMonth.getMonth() && date.getFullYear() === thisMonth.getFullYear();
+  }).length;
+
+  const sortedMembers = useMemo(() => {
+    const rows = [...members];
+    const direction = sortDirection === "asc" ? 1 : -1;
+
+    rows.sort((left, right) => {
+      if (sortBy === "name") {
+        return formatMemberFullName(left).localeCompare(formatMemberFullName(right)) * direction;
+      }
+      if (sortBy === "status") {
+        return left.status.localeCompare(right.status) * direction;
+      }
+
+      const leftTime = left.membershipDate ? new Date(left.membershipDate).getTime() : 0;
+      const rightTime = right.membershipDate ? new Date(right.membershipDate).getTime() : 0;
+      return (leftTime - rightTime) * direction;
+    });
+
+    return rows;
+  }, [members, sortBy, sortDirection]);
+
+  const templateCsvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(
+    "firstName,middleName,lastName,email,phone,status,tags,gender,dateOfBirth,membershipDate,branchId\nJane,,Doe,jane@example.com,+15551234567,Active,Choir|Volunteer,Female,1990-04-02,2025-01-10,",
+  )}`;
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Total Members" value={members.length} />
-        <MetricCard label="Active Members" value={activeMembers} />
-        <MetricCard label="Contact Completeness" value={members.length ? `${Math.round((withContact / members.length) * 100)}%` : "0%"} />
-      </div>
-
+    <div className="space-y-5">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-black text-slate-900">Members Directory</h2>
-            <p className="mt-1 text-xs font-semibold text-slate-500">Production-grade member records with profile, family and contact metadata.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Member Operations</p>
+            <h2 className="text-2xl font-black text-slate-900">Members Directory</h2>
+            <p className="text-sm text-slate-500">Operational profiles, lifecycle status, tags, and contact readiness in one control view.</p>
+            <p className="text-xs font-semibold text-indigo-600">{selectedBranchId ? `Branch scoped: ${selectedBranchId}` : "All branches in active tenant scope"}</p>
           </div>
+
           <div className="flex flex-wrap items-center gap-2">
-            <a
-              href={`data:text/csv;charset=utf-8,${encodeURIComponent("firstName,middleName,lastName,email,phone,status,tags,gender,dateOfBirth,membershipDate,branchId\nJane,,Doe,jane@example.com,+15551234567,Active,Choir|Volunteer,Female,1990-04-02,2025-01-10,")}`}
-              download="members-template.csv"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black uppercase tracking-wide text-slate-700 transition hover:bg-slate-100"
-            >
-              Template
+            <a href={templateCsvHref} download="members-template.csv" className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black uppercase tracking-wide text-slate-700 transition hover:bg-slate-100">
+              Download Template
             </a>
             <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-black uppercase tracking-wide text-slate-700 transition hover:bg-slate-100">
               {importing ? "Importing..." : "Import CSV"}
@@ -249,142 +279,304 @@ export default function MembersPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-3">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name, email, phone, emergency contact"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-          />
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-          >
-            <option value="">All statuses</option>
-            {MEMBER_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <button type="button" onClick={() => void loadMembers()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-            Refresh
-          </button>
+      <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="Total Members" value={members.length} tone="indigo" sublabel={`${newThisMonth} joined this month`} />
+            <MetricCard label="Active Members" value={activeMembers} tone="teal" sublabel={`${inactiveMembers} inactive`} />
+            <MetricCard label="Contact Complete" value={`${contactCompleteness}%`} tone="violet" sublabel={`${withContact} with email/phone`} />
+            <MetricCard label="Tagged Profiles" value={taggedMembers} tone="amber" sublabel={`${prospectMembers + visitorMembers} follow-up queue`} />
+          </div>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="grid gap-3 lg:grid-cols-[1.4fr_.9fr_.8fr_.8fr_auto]">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search name, email, phone, emergency contact"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              />
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="">All statuses</option>
+                {MEMBER_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as "membershipDate" | "name" | "status")}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="membershipDate">Sort: Date Joined</option>
+                <option value="name">Sort: Name</option>
+                <option value="status">Sort: Status</option>
+              </select>
+              <select
+                value={sortDirection}
+                onChange={(event) => setSortDirection(event.target.value as "asc" | "desc")}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="desc">Desc</option>
+                <option value="asc">Asc</option>
+              </select>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => void loadMembers()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("");
+                    setSortBy("membershipDate");
+                    setSortDirection("desc");
+                  }}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+          {notice && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{notice}</div>}
+          {importFailures.length > 0 && (
+            <ul className="space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-700">
+              {importFailures.map((failure) => (
+                <li key={`${failure.row}-${failure.reason}`}>Row {failure.row}: {failure.reason}</li>
+              ))}
+            </ul>
+          )}
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Directory List</p>
+              <p className="text-xs font-semibold text-slate-500">
+                {loading ? "Loading..." : `${sortedMembers.length} records`} · {sortBy} ({sortDirection})
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Member</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Contact</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Tags</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Membership</th>
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, index) => (
+                      <tr key={index}>
+                        <td className="px-5 py-4"><div className="h-4 w-40 animate-pulse rounded bg-slate-200" /></td>
+                        <td className="px-5 py-4"><div className="h-6 w-24 animate-pulse rounded-full bg-slate-200" /></td>
+                        <td className="px-5 py-4"><div className="h-4 w-52 animate-pulse rounded bg-slate-200" /></td>
+                        <td className="px-5 py-4"><div className="h-6 w-24 animate-pulse rounded-full bg-slate-200" /></td>
+                        <td className="px-5 py-4"><div className="h-4 w-32 animate-pulse rounded bg-slate-200" /></td>
+                        <td className="px-5 py-4"><div className="ml-auto h-4 w-24 animate-pulse rounded bg-slate-200" /></td>
+                      </tr>
+                    ))
+                  ) : sortedMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-12 text-center text-sm font-medium text-slate-500">
+                        No members found for this tenant context.
+                      </td>
+                    </tr>
+                  ) : (
+                    sortedMembers.map((member) => (
+                      <tr key={member.id} className="transition hover:bg-slate-50/70">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                              {member.avatarUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={member.avatarUrl} alt={`${formatMemberFullName(member)} avatar`} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-black text-slate-500">
+                                  {member.firstName.charAt(0)}
+                                  {member.lastName.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">{formatMemberFullName(member)}</p>
+                              <p className="text-xs text-slate-500">{member.gender || "Gender not set"} · {member.occupation || "Occupation not set"}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-sm">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadgeClass(member.status)}`}>{member.status}</span>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">
+                          <div>{member.email || "No email"}</div>
+                          <div className="text-xs text-slate-500">{member.phone || "No phone"}</div>
+                        </td>
+                        <td className="px-5 py-4 text-sm">
+                          {member.tags.length ? (
+                            <div className="flex flex-wrap gap-1">
+                              {member.tags.slice(0, 2).map((tag) => (
+                                <span key={tag} className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                                  {tag}
+                                </span>
+                              ))}
+                              {member.tags.length > 2 ? <span className="text-xs font-semibold text-slate-500">+{member.tags.length - 2}</span> : null}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-500">No tags</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">
+                          {member.membershipDate ? new Date(member.membershipDate).toLocaleDateString() : "Not captured"}
+                        </td>
+                        <td className="px-5 py-4 text-right text-sm font-semibold">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedMember(member)}
+                            className="mr-2 rounded-md border border-slate-300 px-2 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                          >
+                            View
+                          </button>
+                          <Link
+                            href={`/admin/members/${member.id}`}
+                            className="mr-2 rounded-md border border-indigo-200 px-2 py-1 text-xs font-bold text-indigo-600 transition hover:bg-indigo-50"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => void deleteMember(member)}
+                            disabled={deletingId === member.id}
+                            className="rounded-md border border-red-200 px-2 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingId === member.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
-      </section>
 
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
-      {notice && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{notice}</div>}
-      {importFailures.length > 0 && (
-        <ul className="space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-700">
-          {importFailures.map((failure) => (
-            <li key={`${failure.row}-${failure.reason}`}>Row {failure.row}: {failure.reason}</li>
-          ))}
-        </ul>
-      )}
+        <aside className="space-y-5">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Quick Actions</p>
+            <div className="mt-3 grid gap-2">
+              <Link href="/admin/members/new" className="rounded-lg bg-indigo-600 px-3 py-2 text-center text-xs font-black uppercase tracking-wider !text-white transition hover:bg-indigo-500">
+                Add New Member
+              </Link>
+              <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-center text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100">
+                {importing ? "Importing..." : "Import CSV"}
+                <input type="file" accept=".csv,text/csv" onChange={importCsv} className="hidden" disabled={importing} />
+              </label>
+              <a href={templateCsvHref} download="members-template.csv" className="rounded-lg border border-slate-300 px-3 py-2 text-center text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-100">
+                Get CSV Template
+              </a>
+            </div>
+          </section>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Member</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Contact</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Membership</th>
-              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
-            {loading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <tr key={index}>
-                  <td className="px-5 py-4"><div className="h-4 w-40 animate-pulse rounded bg-slate-200" /></td>
-                  <td className="px-5 py-4"><div className="h-4 w-52 animate-pulse rounded bg-slate-200" /></td>
-                  <td className="px-5 py-4"><div className="h-6 w-20 animate-pulse rounded-full bg-slate-200" /></td>
-                  <td className="px-5 py-4"><div className="h-4 w-32 animate-pulse rounded bg-slate-200" /></td>
-                  <td className="px-5 py-4"><div className="ml-auto h-4 w-24 animate-pulse rounded bg-slate-200" /></td>
-                </tr>
-              ))
-            ) : members.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-5 py-12 text-center text-sm font-medium text-slate-500">
-                  No members found for this tenant context.
-                </td>
-              </tr>
-            ) : (
-              members.map((member) => (
-                <tr key={member.id}>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
-                        {member.avatarUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={member.avatarUrl} alt={`${formatMemberFullName(member)} avatar`} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-xs font-black text-slate-500">
-                            {member.firstName.charAt(0)}
-                            {member.lastName.charAt(0)}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{formatMemberFullName(member)}</p>
-                        <p className="text-xs text-slate-500">{member.gender || "Gender not set"} · {member.occupation || "Occupation not set"}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
-                    <div>{member.email || "No email"}</div>
-                    <div className="text-xs text-slate-500">{member.phone || "No phone"}</div>
-                  </td>
-                  <td className="px-5 py-4 text-sm">
-                    <span className="inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">{member.status}</span>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
-                    {member.membershipDate ? new Date(member.membershipDate).toLocaleDateString() : "Not captured"}
-                  </td>
-                  <td className="px-5 py-4 text-right text-sm font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMember(member)}
-                      className="mr-2 rounded-md border border-slate-300 px-2 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-                    >
-                      View
-                    </button>
-                    <Link
-                      href={`/admin/members/${member.id}`}
-                      className="mr-2 rounded-md border border-indigo-200 px-2 py-1 text-xs font-bold text-indigo-600 transition hover:bg-indigo-50"
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => void deleteMember(member)}
-                      disabled={deletingId === member.id}
-                      className="rounded-md border border-red-200 px-2 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {deletingId === member.id ? "Deleting..." : "Delete"}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Status Mix</p>
+            <div className="mt-3 space-y-2 text-sm">
+              <StatusRow label="Active" value={activeMembers} total={members.length} tone="bg-emerald-500" />
+              <StatusRow label="Visitor" value={visitorMembers} total={members.length} tone="bg-sky-500" />
+              <StatusRow label="Prospect" value={prospectMembers} total={members.length} tone="bg-amber-500" />
+              <StatusRow label="Inactive" value={inactiveMembers} total={members.length} tone="bg-slate-500" />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Data Quality</p>
+            <div className="mt-3 space-y-3 text-sm">
+              <ProgressRow label="Contact completeness" value={contactCompleteness} />
+              <ProgressRow label="Tagged profiles" value={members.length ? Math.round((taggedMembers / members.length) * 100) : 0} />
+            </div>
+          </section>
+        </aside>
+      </div>
 
       <MemberProfileModal member={selectedMember} open={Boolean(selectedMember)} onClose={() => setSelectedMember(null)} />
     </div>
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: number | string }) {
+function statusBadgeClass(status: string) {
+  if (status === "Active") return "bg-emerald-100 text-emerald-700";
+  if (status === "Visitor") return "bg-sky-100 text-sky-700";
+  if (status === "Prospect") return "bg-amber-100 text-amber-700";
+  if (status === "Inactive") return "bg-slate-200 text-slate-700";
+  return "bg-indigo-100 text-indigo-700";
+}
+
+function MetricCard({
+  label,
+  value,
+  sublabel,
+  tone,
+}: {
+  label: string;
+  value: number | string;
+  sublabel: string;
+  tone: "indigo" | "teal" | "violet" | "amber";
+}) {
+  const toneClass =
+    tone === "indigo"
+      ? "from-indigo-600 to-blue-500"
+      : tone === "teal"
+        ? "from-teal-500 to-emerald-500"
+        : tone === "violet"
+          ? "from-violet-500 to-indigo-500"
+          : "from-amber-500 to-orange-500";
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
+    <div className={`rounded-xl bg-gradient-to-r ${toneClass} p-[1px] shadow-sm`}>
+      <div className="rounded-[11px] bg-white p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="mt-1 text-3xl font-black text-slate-900">{value}</p>
+        <p className="mt-1 text-xs font-semibold text-slate-500">{sublabel}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatusRow({ label, value, total, tone }: { label: string; value: number; total: number; tone: string }) {
+  const percentage = total ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="rounded-lg border border-slate-200 p-2">
+      <div className="flex items-center justify-between">
+        <p className="font-semibold text-slate-700">{label}</p>
+        <p className="text-xs font-black text-slate-500">{value}</p>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+        <div className={`h-full ${tone}`} style={{ width: `${percentage}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ProgressRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="font-semibold text-slate-700">{label}</p>
+        <p className="text-xs font-black text-slate-500">{value}%</p>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-full bg-indigo-500" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+      </div>
     </div>
   );
 }

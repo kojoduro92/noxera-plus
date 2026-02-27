@@ -600,7 +600,7 @@ export class WebsiteService {
             websiteId: website.id,
             slug,
             title,
-            isPublished: slug === 'home',
+            isPublished: true,
           },
         });
 
@@ -608,7 +608,7 @@ export class WebsiteService {
           data: {
             pageId: page.id,
             version: 1,
-            status: slug === 'home' ? 'published' : 'draft',
+            status: 'published',
             content: { blocks } as Prisma.InputJsonValue,
             seo: sanitizeSeo(pageTemplate.seo, title, slug) as Prisma.InputJsonValue,
             changeSummary: `Template applied: ${template.name}`,
@@ -616,16 +616,14 @@ export class WebsiteService {
           },
         });
 
-        if (slug === 'home') {
-          await tx.section.createMany({
-            data: blocks.map((block, index) => ({
-              pageId: page.id,
-              type: block.type,
-              order: index,
-              content: block.settings as Prisma.InputJsonValue,
-            })),
-          });
-        }
+        await tx.section.createMany({
+          data: blocks.map((block, index) => ({
+            pageId: page.id,
+            type: block.type,
+            order: index,
+            content: block.settings as Prisma.InputJsonValue,
+          })),
+        });
       }
 
       const currentMaxThemeVersion = await tx.websiteThemeRevision.aggregate({
