@@ -123,6 +123,13 @@ function getLoginErrorMessage(err: unknown): string {
   if (code === "auth/popup-closed-by-user") return "Google login popup was closed before completion.";
   if (code === "auth/popup-blocked") return "Popup was blocked by your browser. Allow popups and retry.";
   if (code === "auth/unauthorized-domain") return "This domain is not authorized in Firebase Auth settings.";
+  if (
+    message.includes("illegal url for new iframe") ||
+    message.includes("unauthorized-domain") ||
+    message.includes("this domain is not authorized")
+  ) {
+    return "Google sign-in blocked for this URL. Add this domain in Firebase Authentication > Settings > Authorized domains, then retry.";
+  }
   if (code === "auth/operation-not-allowed") return "This sign-in method is disabled in Firebase Authentication settings.";
   if (code === "auth/account-exists-with-different-credential") return "Account exists with another provider. Use the correct method.";
   if (code === "auth/invalid-action-code") return "This OTP link is invalid or already used. Request a new one.";
