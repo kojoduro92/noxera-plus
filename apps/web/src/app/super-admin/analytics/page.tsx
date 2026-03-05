@@ -29,7 +29,7 @@ type Tenant = {
   currency?: string | null;
   plan?: {
     name?: string | null;
-    price?: number | null;
+    price?: number | string | null;
   } | null;
 };
 
@@ -69,7 +69,8 @@ function makeMrrSeries(tenants: Tenant[], windowMonths: TimeWindow): SeriesPoint
       if (tenant.status !== "Active") return sum;
       const createdAt = new Date(tenant.createdAt);
       if (createdAt < start || createdAt >= end) return sum;
-      return sum + (tenant.plan?.price ?? 0);
+      const price = Number(tenant.plan?.price ?? 0);
+      return Number.isFinite(price) ? sum + price : sum;
     }, 0);
 
     points.push({ label: monthLabel(start), value });
@@ -88,6 +89,18 @@ function toSegments(source: Record<string, number>, palette: string[]): Segment[
     }));
 }
 
+function deriveMetricsFromTenants(tenants: Tenant[]): Metrics {
+  const totalChurches = tenants.length;
+  const activeChurches = tenants.filter((tenant) => tenant.status?.toLowerCase() === "active").length;
+  const mrr = tenants.reduce((sum, tenant) => {
+    if (tenant.status?.toLowerCase() !== "active") return sum;
+    const price = Number(tenant.plan?.price ?? 0);
+    return Number.isFinite(price) ? sum + price : sum;
+  }, 0);
+
+  return { totalChurches, activeChurches, mrr };
+}
+
 export default function AnalyticsReportPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -101,14 +114,13 @@ export default function AnalyticsReportPage() {
   const load = async () => {
     try {
       setLoading(true);
-      const [metricsResponse, tenantsResponse, funnelResponse] = await Promise.all([
-        apiFetch<Metrics>("/api/super-admin/tenants/platform/metrics"),
+      const [tenantsResponse, funnelResponse] = await Promise.all([
         apiFetch<Tenant[]>("/api/super-admin/tenants"),
         apiFetch<FunnelStep[]>("/api/super-admin/tenants/platform/activation-funnel"),
       ]);
 
-      setMetrics(metricsResponse);
       setTenants(tenantsResponse);
+      setMetrics(deriveMetricsFromTenants(tenantsResponse));
       setFunnel(funnelResponse);
       setError("");
     } catch (err) {
@@ -136,7 +148,8 @@ export default function AnalyticsReportPage() {
 
     for (const tenant of tenants) {
       const planName = tenant.plan?.name || "Trial";
-      const planPrice = tenant.plan?.price ?? 0;
+      const parsedPlanPrice = Number(tenant.plan?.price ?? 0);
+      const planPrice = Number.isFinite(parsedPlanPrice) ? parsedPlanPrice : 0;
       const current = summary.get(planName) ?? { count: 0, mrr: 0 };
       current.count += 1;
       if (tenant.status === "Active") {

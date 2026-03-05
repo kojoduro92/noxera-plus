@@ -27,7 +27,7 @@ type TenantRow = {
   createdAt: string;
   plan?: {
     name?: string | null;
-    price?: number | null;
+    price?: number | string | null;
   } | null;
   country?: string | null;
   currency?: string | null;
@@ -38,6 +38,22 @@ type PlatformFinancialMetrics = {
   activeChurches: number;
   mrr: number;
 };
+
+function deriveFinancialMetrics(tenants: TenantRow[]): PlatformFinancialMetrics {
+  const totalChurches = tenants.length;
+  const activeChurches = tenants.filter((tenant) => tenant.status?.toLowerCase() === "active").length;
+  const mrr = tenants.reduce((sum, tenant) => {
+    if (tenant.status?.toLowerCase() !== "active") return sum;
+    const price = Number(tenant.plan?.price ?? 0);
+    return Number.isFinite(price) ? sum + price : sum;
+  }, 0);
+
+  return {
+    totalChurches,
+    activeChurches,
+    mrr,
+  };
+}
 
 function monthLabel(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short" });
@@ -97,15 +113,14 @@ export default function SuperAdminDashboard() {
     setError("");
 
     try {
-      const [overviewData, financialData, tenantsData] = await Promise.all([
+      const [overviewData, tenantsData] = await Promise.all([
         apiFetch<PlatformMetrics>("/api/super-admin/platform/overview"),
-        apiFetch<PlatformFinancialMetrics>("/api/super-admin/tenants/platform/metrics"),
         apiFetch<TenantRow[]>("/api/super-admin/tenants"),
       ]);
 
       setMetrics(overviewData);
-      setFinancial(financialData);
       setTenants(tenantsData);
+      setFinancial(deriveFinancialMetrics(tenantsData));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Your session expired. Please sign in again.");
@@ -160,7 +175,8 @@ export default function SuperAdminDashboard() {
       }
 
       const key = tenant.plan?.name || "Trial";
-      const price = tenant.plan?.price ?? 0;
+      const parsedPrice = Number(tenant.plan?.price ?? 0);
+      const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
       acc[key] = (acc[key] ?? 0) + price;
       return acc;
     }, {});
