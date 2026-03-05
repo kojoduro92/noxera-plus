@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api-client";
 import { CURRENCY_OPTIONS, formatMoney } from "@/lib/platform-options";
 import { DonutChart, HorizontalBarChart, LineTrendChart, type Segment, type SeriesPoint } from "@/components/super-admin/charts";
 import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type Metrics = {
   totalChurches: number;
@@ -236,23 +237,34 @@ export default function AnalyticsReportPage() {
       )}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Churches</p>
-          <p className="mt-3 text-4xl font-black text-slate-900">{metrics?.totalChurches ?? 0}</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Subscriptions</p>
-          <p className="mt-3 text-4xl font-black text-slate-900">{metrics?.activeChurches ?? 0}</p>
-          <p className="mt-2 text-xs font-semibold text-emerald-600">{activeRate}% activation rate</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">MRR</p>
-          <p className="mt-3 text-4xl font-black text-slate-900">{formatMoney(metrics?.mrr ?? 0, currency, personalization.defaultLocale)}</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Tracked Plans</p>
-          <p className="mt-3 text-4xl font-black text-slate-900">{planBreakdown.length}</p>
-        </article>
+        <KpiCard
+          label="Total Churches"
+          value={metrics?.totalChurches ?? 0}
+          sublabel={`${tenants.length} records loaded`}
+          tone="blue"
+          icon="users"
+        />
+        <KpiCard
+          label="Active Subscriptions"
+          value={metrics?.activeChurches ?? 0}
+          sublabel={`${activeRate}% activation rate`}
+          tone="emerald"
+          icon="heartbeat"
+        />
+        <KpiCard
+          label="MRR"
+          value={formatMoney(metrics?.mrr ?? 0, currency, personalization.defaultLocale)}
+          sublabel={`Window: ${windowMonths} months`}
+          tone="violet"
+          icon="wallet"
+        />
+        <KpiCard
+          label="Tracked Plans"
+          value={planBreakdown.length}
+          sublabel="Plans with tenant usage"
+          tone="orange"
+          icon="chart"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">

@@ -5,6 +5,7 @@ import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type GivingRow = {
   id: string;
@@ -175,9 +176,30 @@ export default function PledgesPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Total Pledges" value={loading ? "--" : String(pledges.length)} />
-        <MetricCard label="Pending" value={loading ? "--" : String(pendingPledges.length)} />
-        <MetricCard label="Pending Amount" value={loading ? "--" : formatCurrency(pledgedTotal)} />
+        <KpiCard
+          label="Total Pledges"
+          value={pledges.length}
+          sublabel="Recorded commitments"
+          tone="blue"
+          icon="users"
+          loading={loading}
+        />
+        <KpiCard
+          label="Pending"
+          value={pendingPledges.length}
+          sublabel={`${pledges.length - pendingPledges.length} fulfilled`}
+          tone="orange"
+          icon="calendar"
+          loading={loading}
+        />
+        <KpiCard
+          label="Pending Amount"
+          value={formatCurrency(pledgedTotal)}
+          sublabel="Open pledge balance"
+          tone="violet"
+          icon="wallet"
+          loading={loading}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
@@ -263,15 +285,6 @@ export default function PledgesPage() {
           </table>
         </div>
       </section>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
     </div>
   );
 }

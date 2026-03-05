@@ -5,6 +5,7 @@ import { apiFetch, withJsonBody } from "@/lib/api-client";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { ConfirmActionModal } from "@/components/super-admin/confirm-action-modal";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type ReleaseFlag = {
   id: string;
@@ -120,18 +121,30 @@ export default function FeatureFlagsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-wider text-slate-500">Total Flags</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{summary.total}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-wider text-slate-500">Enabled</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{summary.enabled}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-wider text-slate-500">Staged Rollouts</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{summary.rollout}</p>
-        </div>
+        <KpiCard
+          label="Total Flags"
+          value={summary.total}
+          sublabel="Configuration keys"
+          tone="blue"
+          icon="chart"
+          loading={loading}
+        />
+        <KpiCard
+          label="Enabled"
+          value={summary.enabled}
+          sublabel={`${summary.total ? Math.round((summary.enabled / summary.total) * 100) : 0}% currently active`}
+          tone="emerald"
+          icon="heartbeat"
+          loading={loading}
+        />
+        <KpiCard
+          label="Staged Rollouts"
+          value={summary.rollout}
+          sublabel="Non-general release cohorts"
+          tone="violet"
+          icon="calendar"
+          loading={loading}
+        />
       </div>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

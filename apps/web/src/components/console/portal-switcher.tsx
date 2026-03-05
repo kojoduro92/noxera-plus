@@ -56,7 +56,7 @@ export function PortalSwitcher({
       </button>
 
       {open && (
-        <div className={`absolute right-0 top-12 z-50 w-72 rounded-2xl border shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white"}`}>
+        <div className={`absolute right-0 top-12 z-[120] w-72 rounded-2xl border shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white"}`}>
           <div className={`border-b px-4 py-3 ${isDarkMode ? "border-slate-700" : "border-slate-100"}`}>
             <p className={`text-xs font-black ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>Portal Quick Links</p>
             <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>Navigate across the platform quickly.</p>

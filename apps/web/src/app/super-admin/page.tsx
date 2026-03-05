@@ -3,9 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import Link from "next/link";
-import { DonutChart, HorizontalBarChart, LineTrendChart, Sparkline, type Segment, type SeriesPoint } from "@/components/super-admin/charts";
+import { DonutChart, HorizontalBarChart, LineTrendChart, type Segment, type SeriesPoint } from "@/components/super-admin/charts";
 import { COUNTRY_OPTIONS, formatMoney, optionLabel } from "@/lib/platform-options";
 import { usePlatformPersonalization } from "@/contexts/PlatformPersonalizationContext";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type PlatformMetrics = {
   churches: number;
@@ -167,16 +168,6 @@ export default function SuperAdminDashboard() {
     return toSegments(counts, ["#4338ca", "#4f46e5", "#7c3aed", "#2563eb"]);
   }, [tenants]);
 
-  const kpiSparkline = useMemo(() => {
-    const growth = signupSeries.reduce<number[]>((acc, point) => {
-      const next = (acc[acc.length - 1] ?? 0) + point.value;
-      acc.push(next);
-      return acc;
-    }, []);
-
-    return growth.map((value, index) => ({ label: signupSeries[index]?.label ?? `${index + 1}`, value }));
-  }, [signupSeries]);
-
   const activeTenants = statusSegments.find((segment) => segment.label.toLowerCase() === "active")?.value ?? 0;
   const suspendedTenants = statusSegments.find((segment) => segment.label.toLowerCase() === "suspended")?.value ?? 0;
   const systemHealth = [
@@ -245,29 +236,29 @@ export default function SuperAdminDashboard() {
           label="Total Churches"
           value={metrics?.churches ?? 0}
           sublabel={`${metrics?.branches ?? 0} active branches`}
-          accent="from-blue-500 to-cyan-400"
-          series={kpiSparkline}
+          tone="blue"
+          icon="users"
         />
         <KpiCard
           label="Total Members"
           value={metrics?.users ?? 0}
           sublabel={`${metrics?.activeUsers ?? 0} active users`}
-          accent="from-violet-500 to-indigo-500"
-          series={kpiSparkline}
+          tone="violet"
+          icon="heartbeat"
         />
         <KpiCard
           label="Monthly Revenue"
           value={formatMoney(financial?.mrr ?? 0, personalization.defaultCurrency, personalization.defaultLocale)}
           sublabel={`${toPercent(financial?.activeChurches ?? 0, metrics?.churches ?? 0)}% active subscriptions`}
-          accent="from-emerald-500 to-teal-400"
-          series={kpiSparkline}
+          tone="emerald"
+          icon="wallet"
         />
         <KpiCard
           label="Invited Pending"
           value={metrics?.invitedUsers ?? 0}
           sublabel={`${metrics?.customRoles ?? 0} custom roles`}
-          accent="from-fuchsia-500 to-pink-400"
-          series={kpiSparkline}
+          tone="pink"
+          icon="calendar"
         />
       </div>
 
@@ -334,31 +325,5 @@ export default function SuperAdminDashboard() {
         </section>
       </div>
     </div>
-  );
-}
-
-function KpiCard({
-  label,
-  value,
-  sublabel,
-  accent,
-  series,
-}: {
-  label: string;
-  value: number | string;
-  sublabel: string;
-  accent: string;
-  series: SeriesPoint[];
-}) {
-  return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className={`pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accent}`} />
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</p>
-      <p className="mt-2 text-4xl font-black text-slate-900">{value}</p>
-      <p className="mt-2 text-xs font-semibold text-slate-500">{sublabel}</p>
-      <div className="mt-3 text-indigo-500">
-        <Sparkline points={series} className="h-9 w-full" />
-      </div>
-    </article>
   );
 }

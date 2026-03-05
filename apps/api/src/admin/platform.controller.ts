@@ -77,6 +77,22 @@ export class PlatformController {
     return this.usersService.platformResetAccess(id, request.superAdmin?.email ?? 'unknown');
   }
 
+  @Patch('users/bulk')
+  async bulkPlatformUserAction(
+    @Req() request: RequestWithAuth,
+    @Body()
+    body: {
+      userIds: string[];
+      action: 'suspend' | 'reactivate' | 'reset';
+    },
+  ) {
+    return this.usersService.platformBulkOperateUsers(
+      body.userIds,
+      body.action,
+      request.superAdmin?.email ?? 'unknown',
+    );
+  }
+
   @Get('roles')
   async getPlatformRoles(@Query('page') page?: string, @Query('limit') limit?: string, @Query('search') search?: string) {
     return this.rolesService.listGlobalRoles({ page, limit, search });

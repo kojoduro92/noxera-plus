@@ -10,6 +10,8 @@ import { CouponsService } from './coupons.service';
 import { PlatformController } from './platform.controller';
 import { PlatformSettingsController } from './platform-settings.controller';
 import { PlatformSettingsService } from './platform-settings.service';
+import { ExportJobsRunnerService } from './export-jobs-runner.service';
+import { ComplianceWorkflowRunnerService } from './compliance-workflow-runner.service';
 import { PublicPlatformController } from './public-platform.controller';
 import { SupportController } from './support.controller';
 import { SupportService } from './support.service';
@@ -28,6 +30,14 @@ import { NotificationsModule } from '../notifications/notifications.module';
     PlatformSettingsController,
     PublicPlatformController,
   ],
-  providers: [AuditLogsService, BillingService, CouponsService, SupportService, PlatformSettingsService],
+  providers: [
+    AuditLogsService,
+    BillingService,
+    CouponsService,
+    SupportService,
+    PlatformSettingsService,
+    ExportJobsRunnerService,
+    ComplianceWorkflowRunnerService,
+  ],
 })
 export class AdminModule {}

@@ -7,6 +7,7 @@ import { formatMemberFullName } from "@/lib/members";
 import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) return error.message;
@@ -151,9 +152,30 @@ export default function VisitorsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Visitors" value={loading ? "--" : String(metrics.visitors)} />
-        <MetricCard label="Prospects" value={loading ? "--" : String(metrics.prospects)} />
-        <MetricCard label="Converted" value={loading ? "--" : String(metrics.converted)} />
+        <KpiCard
+          label="Visitors"
+          value={metrics.visitors}
+          sublabel={`${visitorRows.length} in pipeline`}
+          tone="blue"
+          icon="users"
+          loading={loading}
+        />
+        <KpiCard
+          label="Prospects"
+          value={metrics.prospects}
+          sublabel="Awaiting nurture actions"
+          tone="violet"
+          icon="calendar"
+          loading={loading}
+        />
+        <KpiCard
+          label="Converted"
+          value={metrics.converted}
+          sublabel="Moved to active members"
+          tone="emerald"
+          icon="heartbeat"
+          loading={loading}
+        />
       </div>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -241,15 +263,6 @@ export default function VisitorsPage() {
           </table>
         </div>
       </section>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
     </div>
   );
 }

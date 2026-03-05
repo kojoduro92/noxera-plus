@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { auth as firebaseAuth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { ConsoleNavItem, ConsoleProfileAction, ConsoleShell } from "@/components/console/console-shell";
@@ -66,6 +66,24 @@ const navItems: ConsoleNavItem[] = [
     ),
   },
   {
+    name: "Access Operations",
+    href: "/super-admin/access-operations",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 10-8 0v4m-3 0h14v9H5v-9zm7 4v2" />
+      </svg>
+    ),
+  },
+  {
+    name: "Tenant Lifecycle",
+    href: "/super-admin/tenant-lifecycle",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h10m3-2l3 3m0-3l-3 3" />
+      </svg>
+    ),
+  },
+  {
     name: "Billing & Plans",
     href: "/super-admin/billing",
     group: "Governance",
@@ -85,8 +103,27 @@ const navItems: ConsoleNavItem[] = [
     ),
   },
   {
+    name: "Compliance Center",
+    href: "/super-admin/compliance",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2l8 4v6c0 5-3.5 9.7-8 10-4.5-.3-8-5-8-10V6l8-4zm-2 10l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    name: "Data & Reporting",
+    href: "/super-admin/data-reports",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 19h16M7 15h2V8H7v7zm4 0h2V5h-2v10zm4 0h2v-4h-2v4z" />
+      </svg>
+    ),
+  },
+  {
     name: "Feature Flags",
     href: "/super-admin/feature-flags",
+    group: "Operations",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 7h14M5 12h14M5 17h14M8 7v10m8-10v10" />
@@ -112,9 +149,17 @@ const navItems: ConsoleNavItem[] = [
     ),
   },
   {
+    name: "Integrations & Webhooks",
+    href: "/super-admin/integrations",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a3 3 0 000 6h3m8-6h3a3 3 0 010 6h-3M8 12h8" />
+      </svg>
+    ),
+  },
+  {
     name: "Support",
     href: "/super-admin/support",
-    group: "Operations",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -221,6 +266,8 @@ function blendHexColors(base: string, overlay: string, weight: number) {
 function getPageTitle(pathname: string): string {
   if (pathname === "/super-admin") return "Platform Dashboard";
   if (pathname === "/super-admin/analytics") return "Analytics Report";
+  if (pathname === "/super-admin/access-operations") return "Access Operations";
+  if (pathname === "/super-admin/tenant-lifecycle") return "Tenant Lifecycle";
   if (pathname.startsWith("/super-admin/churches/")) return "Church Details";
   if (pathname === "/super-admin/churches") return "Churches Directory";
   if (pathname === "/super-admin/users") return "Platform Users";
@@ -228,13 +275,38 @@ function getPageTitle(pathname: string): string {
   if (pathname === "/super-admin/onboarding") return "Church Onboarding";
   if (pathname === "/super-admin/billing") return "Billing & Plans";
   if (pathname === "/super-admin/audit-logs") return "Security & Audit";
+  if (pathname === "/super-admin/compliance") return "Compliance Center";
+  if (pathname === "/super-admin/data-reports") return "Data & Reporting";
   if (pathname === "/super-admin/feature-flags") return "Feature Flags";
   if (pathname === "/super-admin/content") return "Content Hub";
+  if (pathname === "/super-admin/integrations") return "Integrations & Webhooks";
   if (pathname === "/super-admin/system") return "System Controls";
   if (pathname === "/super-admin/support") return "Support Center";
   if (pathname === "/super-admin/notifications") return "Notifications";
   if (pathname === "/super-admin/settings") return "Platform Settings";
   return "System Management";
+}
+
+type SearchConfig = {
+  path: string;
+  param: string;
+  pageParam?: string;
+};
+
+function getSearchConfig(pathname: string): SearchConfig {
+  if (pathname === "/super-admin/users") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/roles") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/churches") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/billing") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/audit-logs") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/support") return { path: pathname, param: "tSearch", pageParam: "tPage" };
+  if (pathname === "/super-admin/notifications") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/access-operations") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/tenant-lifecycle") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/compliance") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/data-reports") return { path: pathname, param: "search", pageParam: "page" };
+  if (pathname === "/super-admin/integrations") return { path: pathname, param: "search" };
+  return { path: "/super-admin/churches", param: "search", pageParam: "page" };
 }
 
 export default function SuperAdminLayout({
@@ -243,10 +315,21 @@ export default function SuperAdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const currentPath = pathname ?? "/super-admin";
   const router = useRouter();
   const { personalization } = usePlatformPersonalization();
   const pageTitle = useMemo(() => getPageTitle(currentPath), [currentPath]);
+  const searchConfig = useMemo(() => {
+    if (currentPath === "/super-admin/support" && searchParams?.get("tab") === "impersonation") {
+      return { path: currentPath, param: "iSearch", pageParam: "iPage" };
+    }
+    return getSearchConfig(currentPath);
+  }, [currentPath, searchParams]);
+  const searchQuery = useMemo(() => {
+    if (searchConfig.path !== currentPath) return "";
+    return searchParams?.get(searchConfig.param) ?? "";
+  }, [currentPath, searchConfig, searchParams]);
   const [sessionEmail, setSessionEmail] = useState("super-admin@noxera.plus");
   const [notificationCount, setNotificationCount] = useState(0);
 
@@ -297,6 +380,24 @@ export default function SuperAdminLayout({
 
     router.push("/super-admin/login");
     router.refresh();
+  };
+
+  const handleConsoleSearch = (query: string) => {
+    const targetPath = searchConfig.path;
+    const params = new URLSearchParams(searchConfig.path === currentPath ? searchParams?.toString() ?? "" : "");
+    if (query) {
+      params.set(searchConfig.param, query);
+      if (searchConfig.pageParam) {
+        params.set(searchConfig.pageParam, "1");
+      }
+    } else {
+      params.delete(searchConfig.param);
+      if (searchConfig.pageParam) {
+        params.delete(searchConfig.pageParam);
+      }
+    }
+    const nextUrl = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
+    router.replace(nextUrl);
   };
 
   const profileActions: ConsoleProfileAction[] = [
@@ -360,6 +461,8 @@ export default function SuperAdminLayout({
         </>
       }
       searchPlaceholder="Search churches, members, transactions..."
+      searchQuery={searchQuery}
+      onSearchSubmit={handleConsoleSearch}
       quickAction={currentPath.startsWith("/super-admin/onboarding") ? undefined : { label: "Register Church", href: "/super-admin/onboarding" }}
       notificationLink={{ href: "/super-admin/notifications", unreadCount: notificationCount }}
       portalLinks={portalLinks}

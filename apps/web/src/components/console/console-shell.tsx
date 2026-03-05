@@ -29,6 +29,9 @@ type ConsoleShellProps = {
   titlePrefix: string;
   brandName: React.ReactNode;
   searchPlaceholder: string;
+  searchQuery?: string;
+  onSearchSubmit?: (query: string) => void;
+  searchDisabled?: boolean;
   quickAction?: {
     label: string;
     href: string;
@@ -89,6 +92,9 @@ export function ConsoleShell({
   titlePrefix,
   brandName,
   searchPlaceholder,
+  searchQuery,
+  onSearchSubmit,
+  searchDisabled = false,
   quickAction,
   notificationLink,
   portalLinks = [],
@@ -104,6 +110,7 @@ export function ConsoleShell({
   const [themePreference, setThemePreference] = useState<"light" | "dark" | "system">("system");
   const [systemDarkMode, setSystemDarkMode] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState(searchQuery ?? "");
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const themeKey = `${shellId}_theme`;
@@ -152,6 +159,10 @@ export function ConsoleShell({
     return () => document.removeEventListener("mousedown", onDocumentClick);
   }, []);
 
+  useEffect(() => {
+    setSearchInput(searchQuery ?? "");
+  }, [searchQuery]);
+
   const profileInitials = useMemo(() => {
     const source = profileEmail || profileName;
     const normalized = source.split("@")[0]?.replace(/[^a-zA-Z0-9]+/g, " ").trim();
@@ -172,6 +183,12 @@ export function ConsoleShell({
   const activeBgColor = blendHexColors(primaryColor, "#0f172a", 0.6);
   const activeBorderColor = blendHexColors(primaryColor, "#94a3b8", 0.8);
   const navAccent = `linear-gradient(110deg, ${primaryColor}, ${accentColor})`;
+  const canSubmitSearch = Boolean(onSearchSubmit) && !searchDisabled;
+
+  const submitSearch = () => {
+    if (!onSearchSubmit || searchDisabled) return;
+    onSearchSubmit(searchInput.trim());
+  };
 
   return (
     <div className={`nx-console-theme ${isDarkMode ? "nx-console-dark bg-slate-950 text-slate-100" : "nx-console-light bg-slate-100 text-slate-900"} flex h-screen antialiased transition-colors duration-300`}>
@@ -270,7 +287,7 @@ export function ConsoleShell({
       </aside>
 
       <main className="relative flex flex-1 flex-col overflow-hidden">
-        <header className={`flex h-20 items-center justify-between border-b px-5 lg:px-8 transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900/95" : "border-slate-200 bg-white/95"} backdrop-blur`}>
+        <header className={`sticky top-0 z-[100] isolate flex h-20 items-center justify-between border-b px-5 lg:px-8 transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900/95" : "border-slate-200 bg-white/95"} backdrop-blur`}>
           <div className="flex min-w-0 items-center gap-4">
             <button className={`rounded-lg p-2 lg:hidden ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`} onClick={() => setIsSidebarOpen(true)}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,7 +315,32 @@ export function ConsoleShell({
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <input type="text" placeholder={searchPlaceholder} className={`w-full border-none bg-transparent text-sm outline-none ${isDarkMode ? "placeholder:text-slate-500" : "placeholder:text-slate-400"}`} />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitSearch();
+                  }
+                }}
+                placeholder={searchPlaceholder}
+                className={`w-full border-none bg-transparent text-sm outline-none ${isDarkMode ? "placeholder:text-slate-500" : "placeholder:text-slate-400"}`}
+              />
+              <button
+                type="button"
+                aria-label="Search"
+                onClick={submitSearch}
+                disabled={!canSubmitSearch}
+                className={`rounded border px-2 py-0.5 text-[10px] font-bold transition ${
+                  isDarkMode
+                    ? "border-slate-600 text-slate-300 hover:bg-slate-700 disabled:text-slate-500"
+                    : "border-slate-300 text-slate-600 hover:bg-slate-100 disabled:text-slate-400"
+                }`}
+              >
+                Go
+              </button>
               <span className={`rounded border px-1.5 py-0.5 text-[10px] ${isDarkMode ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500"}`}>/</span>
             </div>
           </div>
@@ -353,7 +395,7 @@ export function ConsoleShell({
               </button>
 
               {profileMenuOpen && (
-                <div className={`absolute right-0 top-12 z-50 w-64 rounded-2xl border shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white"}`}>
+                <div className={`absolute right-0 top-12 z-[120] w-64 rounded-2xl border shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white"}`}>
                   <div className={`border-b px-4 py-3 ${isDarkMode ? "border-slate-700" : "border-slate-100"}`}>
                     <p className={`text-xs font-black ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>Signed in as</p>
                     <p className={`mt-1 truncate text-xs font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{profileEmail}</p>
@@ -427,7 +469,7 @@ export function ConsoleShell({
           </div>
         </header>
 
-        <div className={`flex-1 overflow-auto transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-slate-100"}`}>
+        <div className={`relative z-0 flex-1 overflow-auto transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-slate-100"}`}>
           <div className="nx-shell py-5 lg:py-8">
             <div className={`mb-5 rounded-2xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600"} nx-soft-panel`}>
               <p className="text-xs font-semibold">{infoBanner.title}</p>

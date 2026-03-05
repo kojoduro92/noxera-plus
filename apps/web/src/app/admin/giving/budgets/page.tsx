@@ -5,6 +5,7 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type GivingRow = {
   id: string;
@@ -151,9 +152,30 @@ export default function BudgetsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Budget Total" value={loading ? "--" : formatCurrency(totals.budget)} />
-        <MetricCard label="Actual Total" value={loading ? "--" : formatCurrency(totals.actual)} />
-        <MetricCard label="Variance" value={loading ? "--" : formatCurrency(totals.variance)} />
+        <KpiCard
+          label="Budget Total"
+          value={formatCurrency(totals.budget)}
+          sublabel={`Month ${month}`}
+          tone="blue"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Actual Total"
+          value={formatCurrency(totals.actual)}
+          sublabel="Collected for selected month"
+          tone="teal"
+          icon="chart"
+          loading={loading}
+        />
+        <KpiCard
+          label="Variance"
+          value={formatCurrency(totals.variance)}
+          sublabel={totals.variance >= 0 ? "Above budget" : "Below budget"}
+          tone={totals.variance >= 0 ? "emerald" : "orange"}
+          icon="heartbeat"
+          loading={loading}
+        />
       </div>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -209,15 +231,6 @@ export default function BudgetsPage() {
           </table>
         </div>
       </section>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type EventRow = {
   id: string;
@@ -151,18 +152,29 @@ export default function EventsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Events</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{events.length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Upcoming</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{upcomingCount}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Current View</p>
-          <p className="mt-2 text-2xl font-black text-slate-900">{viewMode === "list" ? "List" : "Calendar"}</p>
-        </div>
+        <KpiCard
+          label="Total Events"
+          value={events.length}
+          sublabel={`${filteredEvents.length} visible`}
+          tone="blue"
+          icon="calendar"
+          loading={loading}
+        />
+        <KpiCard
+          label="Upcoming"
+          value={upcomingCount}
+          sublabel="Future scheduled events"
+          tone="teal"
+          icon="heartbeat"
+          loading={loading}
+        />
+        <KpiCard
+          label="Current View"
+          value={viewMode === "list" ? "List" : "Calendar"}
+          sublabel="Directory presentation mode"
+          tone="violet"
+          icon="chart"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">

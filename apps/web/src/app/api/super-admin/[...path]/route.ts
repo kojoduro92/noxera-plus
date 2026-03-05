@@ -24,6 +24,21 @@ function isImpersonationStop(path: string[], method: string) {
   return method === "POST" && path.length === 3 && path[0] === "tenants" && path[1] === "impersonate" && path[2] === "stop";
 }
 
+function buildForwardHeaders(upstreamHeaders: Headers, contentType: string) {
+  const headers = new Headers();
+  headers.set("content-type", contentType);
+
+  const passthrough = ["content-disposition", "content-length", "cache-control", "etag", "last-modified"];
+  for (const key of passthrough) {
+    const value = upstreamHeaders.get(key);
+    if (value) {
+      headers.set(key, value);
+    }
+  }
+
+  return headers;
+}
+
 async function proxyRequest(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
 
@@ -57,9 +72,11 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
 
   try {
     const upstreamResponse = await fetch(targetUrl, init);
-    const payload = await upstreamResponse.text();
+    const upstreamContentType = upstreamResponse.headers.get("content-type") ?? "application/octet-stream";
+    const isJson = upstreamContentType.includes("application/json");
 
     if (!upstreamResponse.ok) {
+      const payload = await upstreamResponse.text();
       let message = `Request failed with status ${upstreamResponse.status}.`;
       let code = "UPSTREAM_ERROR";
 
@@ -85,41 +102,62 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const upstreamContentType = upstreamResponse.headers.get("content-type") ?? "application/json; charset=utf-8";
-    const isJson = upstreamContentType.includes("application/json");
-
-    if (isImpersonationStart(path, request.method) && isJson) {
-      const body = JSON.parse(payload) as {
-        token?: string;
-        expiresAt?: string;
-      };
-      const response = NextResponse.json(body, { status: upstreamResponse.status });
-      if (body.token) {
-        const maxAge = body.expiresAt
-          ? Math.max(1, Math.floor((new Date(body.expiresAt).getTime() - Date.now()) / 1000))
-          : IMPERSONATION_TTL_SECONDS;
-        response.cookies.set(IMPERSONATION_COOKIE_NAME, body.token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge,
-          path: "/",
-        });
-        response.cookies.delete(ADMIN_COOKIE_NAME);
+    if (isJson) {
+      const payload = await upstreamResponse.text();
+      let parsedPayload: unknown = null;
+      if (payload.trim()) {
+        try {
+          parsedPayload = JSON.parse(payload);
+        } catch {
+          parsedPayload = null;
+        }
       }
-      return response;
+
+      if (isImpersonationStart(path, request.method)) {
+        const body = (parsedPayload ?? {}) as {
+          token?: string;
+          expiresAt?: string;
+        };
+        const response = NextResponse.json(body, { status: upstreamResponse.status });
+        if (body.token) {
+          const maxAge = body.expiresAt
+            ? Math.max(1, Math.floor((new Date(body.expiresAt).getTime() - Date.now()) / 1000))
+            : IMPERSONATION_TTL_SECONDS;
+          response.cookies.set(IMPERSONATION_COOKIE_NAME, body.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge,
+            path: "/",
+          });
+          response.cookies.delete(ADMIN_COOKIE_NAME);
+        }
+        return response;
+      }
+
+      if (isImpersonationStop(path, request.method)) {
+        const response = NextResponse.json(parsedPayload ?? {}, { status: upstreamResponse.status });
+        response.cookies.delete(IMPERSONATION_COOKIE_NAME);
+        return response;
+      }
+
+      return new NextResponse(payload, {
+        status: upstreamResponse.status,
+        headers: buildForwardHeaders(upstreamResponse.headers, upstreamContentType),
+      });
     }
+
+    const payload = await upstreamResponse.arrayBuffer();
+    const binaryResponse = new NextResponse(payload, {
+      status: upstreamResponse.status,
+      headers: buildForwardHeaders(upstreamResponse.headers, upstreamContentType),
+    });
 
     if (isImpersonationStop(path, request.method)) {
-      const response = isJson ? NextResponse.json(JSON.parse(payload), { status: upstreamResponse.status }) : new NextResponse(payload, { status: upstreamResponse.status });
-      response.cookies.delete(IMPERSONATION_COOKIE_NAME);
-      return response;
+      binaryResponse.cookies.delete(IMPERSONATION_COOKIE_NAME);
     }
 
-    return new NextResponse(payload, {
-      status: upstreamResponse.status,
-      headers: { "content-type": upstreamContentType },
-    });
+    return binaryResponse;
   } catch {
     return NextResponse.json({ message: "Unable to reach API service.", code: "API_UNREACHABLE" }, { status: 502 });
   }

@@ -8,6 +8,7 @@ import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type BillingListResponse = PaginatedResponse<BillingTenantRow> & {
   summary: {
@@ -280,18 +281,30 @@ export default function BillingPlansPage() {
       {activeTab === "subscriptions" ? (
         <>
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Subscriptions</p>
-          <p className="mt-3 text-3xl font-black text-slate-900">{data.summary.activeSubscriptions}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Current MRR</p>
-          <p className="mt-3 text-3xl font-black text-slate-900">{formatMoney(data.summary.mrr, personalization.defaultCurrency, personalization.defaultLocale)}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Plans Configured</p>
-          <p className="mt-3 text-3xl font-black text-slate-900">{plans.length}</p>
-        </div>
+        <KpiCard
+          label="Active Subscriptions"
+          value={data.summary.activeSubscriptions}
+          sublabel={`${data.total} tenant subscriptions`}
+          tone="blue"
+          icon="users"
+          loading={loading}
+        />
+        <KpiCard
+          label="Current MRR"
+          value={formatMoney(data.summary.mrr, personalization.defaultCurrency, personalization.defaultLocale)}
+          sublabel="Monthly recurring revenue"
+          tone="teal"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Plans Configured"
+          value={plans.length}
+          sublabel="Billing plans available"
+          tone="violet"
+          icon="calendar"
+          loading={loading}
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5">

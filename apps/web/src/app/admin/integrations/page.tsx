@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type IntegrationRow = {
   id: string;
@@ -139,18 +140,29 @@ export default function IntegrationsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Providers</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{loading ? "--" : integrations.length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Connected</p>
-          <p className="mt-2 text-3xl font-black text-emerald-600">{loading ? "--" : connectedCount}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Actions Logged</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{activityLog.length}</p>
-        </div>
+        <KpiCard
+          label="Providers"
+          value={integrations.length}
+          sublabel="Configured integrations"
+          tone="blue"
+          icon="chart"
+          loading={loading}
+        />
+        <KpiCard
+          label="Connected"
+          value={connectedCount}
+          sublabel={`${integrations.length ? Math.round((connectedCount / integrations.length) * 100) : 0}% healthy`}
+          tone="emerald"
+          icon="heartbeat"
+          loading={loading}
+        />
+        <KpiCard
+          label="Actions Logged"
+          value={activityLog.length}
+          sublabel="Recent sync/export actions"
+          tone="violet"
+          icon="calendar"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">

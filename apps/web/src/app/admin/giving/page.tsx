@@ -5,6 +5,7 @@ import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type GivingRow = {
   id: string;
@@ -163,23 +164,38 @@ export default function GivingPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Tithes (MTD)</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{formatCurrency(summary.tithes)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Offerings (MTD)</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{formatCurrency(summary.offerings)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Special Funds (MTD)</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{formatCurrency(summary.special)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Filtered Total</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{formatCurrency(totals.total)}</p>
-          <p className="mt-1 text-xs font-medium text-slate-500">{totals.count} transactions</p>
-        </div>
+        <KpiCard
+          label="Tithes (MTD)"
+          value={formatCurrency(summary.tithes)}
+          sublabel="Current month to date"
+          tone="blue"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Offerings (MTD)"
+          value={formatCurrency(summary.offerings)}
+          sublabel="Current month to date"
+          tone="teal"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Special Funds (MTD)"
+          value={formatCurrency(summary.special)}
+          sublabel="Current month to date"
+          tone="violet"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Filtered Total"
+          value={formatCurrency(totals.total)}
+          sublabel={`${totals.count} transactions`}
+          tone="orange"
+          icon="chart"
+          loading={loading}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">

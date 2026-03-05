@@ -5,6 +5,7 @@ import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type FollowUpRow = {
   id: string;
@@ -211,18 +212,30 @@ export default function FollowUpsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Follow-ups</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{loading ? "--" : followUps.length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending</p>
-          <p className="mt-2 text-3xl font-black text-amber-600">{loading ? "--" : pendingCount}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Overdue</p>
-          <p className="mt-2 text-3xl font-black text-red-600">{loading ? "--" : overdueCount}</p>
-        </div>
+        <KpiCard
+          label="Total Follow-ups"
+          value={followUps.length}
+          sublabel={`${filteredRows.length} in current view`}
+          tone="blue"
+          icon="users"
+          loading={loading}
+        />
+        <KpiCard
+          label="Pending"
+          value={pendingCount}
+          sublabel="Awaiting action"
+          tone="orange"
+          icon="calendar"
+          loading={loading}
+        />
+        <KpiCard
+          label="Overdue"
+          value={overdueCount}
+          sublabel="Past due date"
+          tone="pink"
+          icon="heartbeat"
+          loading={loading}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">

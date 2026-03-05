@@ -3,6 +3,7 @@
 import React, { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type ServiceRow = {
   id: string;
@@ -263,23 +264,34 @@ export default function ServicesPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Scheduled Services</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{services.length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Check-Ins</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{totalCheckIns}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Avg Attendance</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{averageAttendance}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Today Check-Ins</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{todayCheckIns}</p>
-          <p className="mt-2 text-xs font-medium text-slate-500">Next service: {nextService ? formatDateTime(nextService.date) : "Not scheduled"}</p>
-        </div>
+        <KpiCard
+          label="Scheduled Services"
+          value={services.length}
+          sublabel={`${filteredServices.length} visible in filters`}
+          tone="blue"
+          icon="calendar"
+        />
+        <KpiCard
+          label="Total Check-Ins"
+          value={totalCheckIns}
+          sublabel="Across loaded services"
+          tone="teal"
+          icon="users"
+        />
+        <KpiCard
+          label="Avg Attendance"
+          value={averageAttendance}
+          sublabel="Per scheduled service"
+          tone="violet"
+          icon="chart"
+        />
+        <KpiCard
+          label="Today Check-Ins"
+          value={todayCheckIns}
+          sublabel={`Next: ${nextService ? formatDateTime(nextService.date) : "Not scheduled"}`}
+          tone="orange"
+          icon="heartbeat"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">

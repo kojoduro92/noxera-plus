@@ -127,8 +127,6 @@ export default function SuperAdminSettingsPage() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-
-  const [flagSearch, setFlagSearch] = useState("");
   const { hydrateFromPlatformProfile, setPersonalization } = usePlatformPersonalization();
 
   const loadSettings = useCallback(async () => {
@@ -139,10 +137,7 @@ export default function SuperAdminSettingsPage() {
       const [settingsPayload, notificationPayload, flagsPayload] = await Promise.all([
         apiFetch<PlatformSettingsResponse>("/api/super-admin/settings/platform", { cache: "no-store" }),
         apiFetch<NotificationPolicy>("/api/super-admin/settings/notification-policy", { cache: "no-store" }),
-        apiFetch<ReleaseFlagsResponse>(
-          `/api/super-admin/settings/release-flags${flagSearch ? `?search=${encodeURIComponent(flagSearch)}` : ""}`,
-          { cache: "no-store" },
-        ),
+        apiFetch<ReleaseFlagsResponse>("/api/super-admin/settings/release-flags", { cache: "no-store" }),
       ]);
 
       const hydratedProfile: PlatformProfile = {
@@ -174,7 +169,7 @@ export default function SuperAdminSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [flagSearch, hydrateFromPlatformProfile]);
+  }, [hydrateFromPlatformProfile]);
 
   useEffect(() => {
     void loadSettings();
@@ -206,22 +201,6 @@ export default function SuperAdminSettingsPage() {
       setError(getErrorMessage(err, "Unable to save settings."));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const toggleFlag = async (flag: ReleaseFlag) => {
-    setError("");
-    setNotice("");
-
-    try {
-      await apiFetch(`/api/super-admin/settings/release-flags/${encodeURIComponent(flag.key)}`, {
-        method: "PATCH",
-        ...withJsonBody({ enabled: !flag.enabled }),
-      });
-      setNotice(`${flag.key} ${flag.enabled ? "disabled" : "enabled"}.`);
-      await loadSettings();
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to update release flag."));
     }
   };
 
@@ -701,8 +680,13 @@ export default function SuperAdminSettingsPage() {
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-black text-slate-900">Release Controls</h3>
-          <input value={flagSearch} onChange={(event) => setFlagSearch(event.target.value)} placeholder="Search flags" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          <Link href="/super-admin/feature-flags" className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-700 transition hover:bg-indigo-100">
+            Open Feature Flags
+          </Link>
         </div>
+        <p className="mt-1 text-xs font-semibold text-slate-500">
+          Feature flag operations are managed in the dedicated Feature Flags module to keep release governance centralized.
+        </p>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -726,16 +710,15 @@ export default function SuperAdminSettingsPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Key</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Stage</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
               {releaseFlags.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-sm text-slate-500">No release flags found.</td>
+                  <td colSpan={3} className="px-4 py-10 text-center text-sm text-slate-500">No release flags found.</td>
                 </tr>
               ) : (
-                releaseFlags.map((flag) => (
+                releaseFlags.slice(0, 8).map((flag) => (
                   <tr key={flag.id}>
                     <td className="px-4 py-3 text-sm font-semibold text-slate-900">{flag.key}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">{flag.rolloutStage}</td>
@@ -743,11 +726,6 @@ export default function SuperAdminSettingsPage() {
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${flag.enabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700"}`}>
                         {flag.enabled ? "Enabled" : "Disabled"}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      <button type="button" onClick={() => void toggleFlag(flag)} className="font-semibold text-indigo-600 hover:text-indigo-500">
-                        {flag.enabled ? "Disable" : "Enable"}
-                      </button>
                     </td>
                   </tr>
                 ))

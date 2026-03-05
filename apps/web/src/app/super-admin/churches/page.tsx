@@ -40,6 +40,11 @@ export default function ChurchesDirectoryPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [confirmChurch, setConfirmChurch] = useState<Church | null>(null);
   const searchParams = useSearchParams();
+  const searchParam = searchParams?.get("search") || "";
+
+  useEffect(() => {
+    setSearch(searchParam);
+  }, [searchParam]);
 
   const fetchChurches = async () => {
     try {

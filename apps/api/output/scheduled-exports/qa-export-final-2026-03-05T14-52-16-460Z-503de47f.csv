@@ -1,0 +1,12 @@
+id,name,email,status,isSuperAdmin,tenant,role,branch,invitedAt,activatedAt,lastLoginAt,createdAt
+f028a171-b4a0-4160-94f1-b23a248d647d,Evelyn Adjei,eveadjei2020@gmail.com,Invited,false,Grace Fellowship,Viewer,Fruitful Embassy,2026-02-27T00:22:20.229Z,,,2026-02-27T00:22:20.229Z
+1f2aec71-8515-45e0-9894-f343cb524505,UX Owner,ux.1772113136@example.com,Invited,false,UX Smoke 1772113136,Owner,Main Campus,2026-02-26T13:38:56.722Z,,,2026-02-26T13:38:56.722Z
+41a6541f-377f-4ee4-ad99-2da25f3708c0,E2E Owner,e2e.1772111321@example.com,Invited,false,Smoke E2E 1772111321,Owner,Main Campus,2026-02-26T13:08:41.714Z,,,2026-02-26T13:08:41.714Z
+ac066a87-46b6-45ab-8cd5-09825415b32d,Smoke Owner,smoke.1772111195@example.com,Invited,false,Smoke Church 1772111195,Owner,Main Campus,2026-02-26T13:06:35.675Z,,,2026-02-26T13:06:35.675Z
+6ba8d4e7-c12d-40a5-8628-7380e576fbb2,Pastor Lawrence,beejayemma30@gmail.com,Active,false,Victory Bible Church,Owner,,2026-02-26T11:30:10.713Z,2026-02-26T11:31:22.380Z,2026-02-26T11:34:29.030Z,2026-02-26T11:30:10.713Z
+657296a4-135a-4e91-af7d-3ae589e7b048,Admin User,emmanueloduroasamoah1@gmail.com,Active,false,LightHouse,Owner,,2026-02-26T05:51:09.008Z,2026-02-26T05:51:09.008Z,2026-03-05T01:25:22.880Z,2026-02-26T05:51:09.008Z
+75512d7c-4e7d-4c8a-91bd-3a7473016c04,Admin User,emmanuel.oduro@bluecrest.edu.gh,Active,false,Jesus Is Lord,Owner,,2026-02-26T05:38:45.221Z,2026-02-26T05:38:45.221Z,2026-02-27T13:28:22.481Z,2026-02-26T05:38:45.221Z
+e2cc28a1-2a5d-457b-824f-fac14532654d,Admin User,eve@gmail.com,Active,false,Kharis Embassy,Owner,,2026-02-25T19:36:22.899Z,2026-02-25T19:36:22.899Z,,2026-02-25T19:36:22.899Z
+649b678a-5b9b-4ee2-a2d4-5cae9dbc5108,Admin User,admin@covenant.org,Active,false,Covenant Chapel,Owner,,2026-02-25T17:59:45.491Z,2026-02-25T17:59:45.491Z,,2026-02-25T17:59:45.491Z
+43468b0c-f007-4d93-bf0c-e53a8961bfa1,Admin User,kojoduro92@gmail.com,Active,false,Graceworld Ministries,Owner,,2026-02-25T17:57:04.463Z,2026-02-25T17:57:04.463Z,2026-03-05T10:57:36.706Z,2026-02-25T17:57:04.463Z
+4b4f4fba-b101-43f0-8f91-184913932ea1,Admin User,pastor@grace.com,Active,false,Grace Fellowship,Owner,,2026-02-25T17:53:46.893Z,2026-02-25T17:53:46.893Z,,2026-02-25T17:53:46.893Z

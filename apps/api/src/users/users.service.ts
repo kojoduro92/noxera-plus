@@ -571,6 +571,65 @@ export class UsersService {
     return this.getPlatformUserById(userId);
   }
 
+  async platformBulkOperateUsers(
+    userIds: string[],
+    action: 'suspend' | 'reactivate' | 'reset',
+    actorEmail: string,
+  ) {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      throw new BadRequestException('At least one user id is required.');
+    }
+
+    if (!['suspend', 'reactivate', 'reset'].includes(action)) {
+      throw new BadRequestException('Unsupported bulk action.');
+    }
+
+    const normalizedUserIds = Array.from(
+      new Set(
+        userIds
+          .map((value) => value?.trim())
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    if (normalizedUserIds.length === 0) {
+      throw new BadRequestException('At least one valid user id is required.');
+    }
+
+    if (normalizedUserIds.length > 100) {
+      throw new BadRequestException('Bulk operations are limited to 100 users per request.');
+    }
+
+    const results: Array<{ userId: string; ok: boolean; error?: string }> = [];
+
+    // Intentionally sequential to preserve owner-retention checks per tenant.
+    for (const userId of normalizedUserIds) {
+      try {
+        if (action === 'suspend') {
+          await this.platformUpdateStatus(userId, 'Suspended', actorEmail);
+        } else if (action === 'reactivate') {
+          await this.platformUpdateStatus(userId, 'Active', actorEmail);
+        } else {
+          await this.platformResetAccess(userId, actorEmail);
+        }
+        results.push({ userId, ok: true });
+      } catch (error) {
+        results.push({ userId, ok: false, error: this.getErrorMessage(error) });
+      }
+    }
+
+    const succeeded = results.filter((item) => item.ok).length;
+    const failed = results.length - succeeded;
+
+    return {
+      action,
+      total: results.length,
+      succeeded,
+      failed,
+      results,
+    };
+  }
+
   async getPlatformOverview() {
     const [churches, branches, users, invitedUsers, suspendedUsers, activeUsers, roles, customRoles] = await Promise.all([
       this.prisma.tenant.count(),
@@ -612,6 +671,13 @@ export class UsersService {
 
   private normalizeEmail(value?: string) {
     return value?.trim().toLowerCase() ?? '';
+  }
+
+  private getErrorMessage(error: unknown) {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return 'Operation failed.';
   }
 
   private async validateBranchIds(tenantId: string, branchIds: string[]) {

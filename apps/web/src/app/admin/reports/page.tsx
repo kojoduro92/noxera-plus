@@ -6,6 +6,7 @@ import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
 import { DonutChart, LineTrendChart, StackedBarTrendChart } from "@/components/admin/charts";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type MembersReport = {
   summary: {
@@ -206,26 +207,38 @@ export default function ReportsPage() {
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Members</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{loading ? "--" : members?.summary.totalMembers ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-500">Active: {members?.summary.activeMembers ?? 0}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Check-ins</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{loading ? "--" : attendance?.summary.totalCheckIns ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-500">Visitors: {attendance?.summary.visitorCheckIns ?? 0}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Giving</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{loading ? "--" : formatCurrency(giving?.summary.totalAmount ?? 0)}</p>
-          <p className="mt-1 text-xs text-slate-500">Transactions: {giving?.summary.transactionCount ?? 0}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Groups</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{loading ? "--" : groups?.summary.groupCount ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-500">Avg members/group: {groups?.summary.averageMembersPerGroup ?? 0}</p>
-        </div>
+        <KpiCard
+          label="Members"
+          value={members?.summary.totalMembers ?? 0}
+          sublabel={`Active: ${members?.summary.activeMembers ?? 0}`}
+          tone="blue"
+          icon="users"
+          loading={loading}
+        />
+        <KpiCard
+          label="Check-ins"
+          value={attendance?.summary.totalCheckIns ?? 0}
+          sublabel={`Visitors: ${attendance?.summary.visitorCheckIns ?? 0}`}
+          tone="teal"
+          icon="heartbeat"
+          loading={loading}
+        />
+        <KpiCard
+          label="Giving"
+          value={formatCurrency(giving?.summary.totalAmount ?? 0)}
+          sublabel={`Transactions: ${giving?.summary.transactionCount ?? 0}`}
+          tone="violet"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Groups"
+          value={groups?.summary.groupCount ?? 0}
+          sublabel={`Avg members/group: ${groups?.summary.averageMembersPerGroup ?? 0}`}
+          tone="orange"
+          icon="chart"
+          loading={loading}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">

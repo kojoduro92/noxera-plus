@@ -5,6 +5,7 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 import { downloadRows, type ExportFormat } from "@/lib/export-utils";
 import { TableExportMenu } from "@/components/super-admin/table-export-menu";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type GivingRow = {
   id: string;
@@ -115,9 +116,30 @@ export default function FundsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Funds" value={loading ? "--" : String(totalFunds)} />
-        <MetricCard label="Total Amount" value={loading ? "--" : formatCurrency(totalAmount)} />
-        <MetricCard label="Transactions" value={loading ? "--" : String(records.length)} />
+        <KpiCard
+          label="Funds"
+          value={totalFunds}
+          sublabel="Distinct giving funds"
+          tone="blue"
+          icon="wallet"
+          loading={loading}
+        />
+        <KpiCard
+          label="Total Amount"
+          value={formatCurrency(totalAmount)}
+          sublabel="Across filtered range"
+          tone="teal"
+          icon="chart"
+          loading={loading}
+        />
+        <KpiCard
+          label="Transactions"
+          value={records.length}
+          sublabel="Raw giving entries"
+          tone="violet"
+          icon="calendar"
+          loading={loading}
+        />
       </div>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -166,15 +188,6 @@ export default function FundsPage() {
           </table>
         </div>
       </section>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
     </div>
   );
 }

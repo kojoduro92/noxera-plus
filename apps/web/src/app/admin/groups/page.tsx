@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch, withJsonBody } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type GroupRow = {
   id: string;
@@ -228,18 +229,30 @@ export default function GroupsPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Groups</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{groupMetrics.total}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Member Assignments</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{groupMetrics.totalAssignments}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Ministry Groups</p>
-          <p className="mt-2 text-3xl font-black text-slate-900">{groupMetrics.ministries}</p>
-        </div>
+        <KpiCard
+          label="Total Groups"
+          value={groupMetrics.total}
+          sublabel={`${filteredGroups.length} in view`}
+          tone="blue"
+          icon="users"
+          loading={loading}
+        />
+        <KpiCard
+          label="Member Assignments"
+          value={groupMetrics.totalAssignments}
+          sublabel="Total linked memberships"
+          tone="teal"
+          icon="heartbeat"
+          loading={loading}
+        />
+        <KpiCard
+          label="Ministry Groups"
+          value={groupMetrics.ministries}
+          sublabel="Groups of type ministry"
+          tone="violet"
+          icon="chart"
+          loading={loading}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">

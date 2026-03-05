@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { useBranch } from "@/contexts/BranchContext";
 import { DonutChart, LineTrendChart, StackedBarTrendChart } from "@/components/admin/charts";
+import { KpiCard } from "@/components/console/kpi-card";
 
 type MemberRow = { id: string; email?: string | null; phone?: string | null };
 type ServiceRow = { id: string; name: string; date: string };
@@ -206,10 +207,38 @@ export default function AdminDashboard() {
       </section>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard label="Total Members" value={metrics.totalMembers} loading={loading} tone="indigo" />
-        <MetricCard label="Scheduled Services" value={metrics.totalServices} loading={loading} tone="violet" />
-        <MetricCard label="Weekly Check-Ins" value={metrics.weeklyCheckIns} loading={loading} tone="emerald" />
-        <MetricCard label="Pending Follow-ups" value={metrics.pendingFollowUps} loading={loading} tone="amber" />
+        <KpiCard
+          label="Total Members"
+          value={metrics.totalMembers}
+          sublabel={`${metrics.contactCoverage}% contact coverage`}
+          loading={loading}
+          tone="blue"
+          icon="users"
+        />
+        <KpiCard
+          label="Scheduled Services"
+          value={metrics.totalServices}
+          sublabel={`${metrics.upcomingServices.length} upcoming`}
+          loading={loading}
+          tone="violet"
+          icon="calendar"
+        />
+        <KpiCard
+          label="Weekly Check-Ins"
+          value={metrics.weeklyCheckIns}
+          sublabel="Last 7 days"
+          loading={loading}
+          tone="emerald"
+          icon="heartbeat"
+        />
+        <KpiCard
+          label="Pending Follow-ups"
+          value={metrics.pendingFollowUps}
+          sublabel={`${followUpCompletion}% completion`}
+          loading={loading}
+          tone="orange"
+          icon="chart"
+        />
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Next Service</p>
           <p className="mt-2 text-sm font-black text-slate-800">{nextService?.name ?? "No upcoming service"}</p>
@@ -307,39 +336,6 @@ export default function AdminDashboard() {
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
-      )}
-    </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  loading,
-  tone,
-}: {
-  label: string;
-  value: number;
-  loading: boolean;
-  tone: "indigo" | "violet" | "emerald" | "amber";
-}) {
-  const toneClass =
-    tone === "indigo"
-      ? "from-indigo-500 to-blue-500"
-      : tone === "violet"
-        ? "from-violet-500 to-fuchsia-500"
-        : tone === "amber"
-          ? "from-amber-500 to-orange-500"
-          : "from-emerald-500 to-teal-500";
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className={`pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${toneClass}`} />
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</p>
-      {loading ? (
-        <div className="mt-2 h-9 w-20 animate-pulse rounded bg-slate-200" />
-      ) : (
-        <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
       )}
     </div>
   );
